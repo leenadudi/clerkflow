@@ -10,9 +10,9 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Clerkflow — The clerk operating system for towns under 5,000',
+  title: 'Clerkflow — The clerk operating system for small towns',
   description:
-    'Clerkflow replaces spreadsheets, inbox chaos, and scattered tools with one calm workspace for meetings, public records, forms, and a public hub your residents will actually use.',
+    'The clerk operating system designed specifically for small towns. One calm workspace for meetings, public records, forms, and a resident hub your community will actually use.',
   generator: 'v0.app',
 }
 

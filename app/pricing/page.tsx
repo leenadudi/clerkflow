@@ -20,7 +20,7 @@ const FEATURES = [
 const FAQ = [
   {
     q: 'Do we need an RFP or formal procurement?',
-    a: 'Most towns under 5,000 can approve Clerkflow under their informal purchase threshold — typically $2,000–$5,000 annually. We provide a simple quote letter for your council packet.',
+    a: 'Most small towns can approve Clerkflow under their informal purchase threshold — typically $2,000–$5,000 annually. We provide a simple quote letter for your council packet.',
   },
   {
     q: 'Is there a setup fee?',
@@ -59,7 +59,7 @@ export default function PricingPage() {
             <p className="text-sm font-medium text-primary">Most popular</p>
             <CardTitle className="text-2xl">Town plan</CardTitle>
             <p className="text-muted-foreground">
-              For municipalities under 5,000 residents
+              For small towns and townships
             </p>
           </CardHeader>
           <CardContent>

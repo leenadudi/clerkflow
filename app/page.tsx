@@ -42,10 +42,10 @@ export default function HomePage() {
           <div>
             <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-muted-foreground">
               <ShieldCheck className="size-3.5 text-primary" />
-              Built for towns under 5,000
+              Built for small towns
             </span>
             <h1 className="mt-5 text-balance text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
-              The clerk operating system for towns under 5,000.
+              The clerk operating system designed specifically for small towns.
             </h1>
             <p className="mt-5 max-w-md text-pretty text-lg leading-relaxed text-muted-foreground">
               Clerkflow replaces spreadsheets, inbox chaos, and scattered tools
@@ -131,7 +131,7 @@ export default function HomePage() {
               together.&rdquo;
             </p>
             <p className="mt-4 text-sm text-muted-foreground">
-              Town Clerk · Township under 1,500 residents
+              Town Clerk · Small township in Ohio
             </p>
           </div>
         </section>

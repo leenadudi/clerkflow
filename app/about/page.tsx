@@ -31,9 +31,9 @@ export default function AboutPage() {
           Modern tools for the people who keep towns running.
         </h1>
         <p className="mt-5 text-pretty text-lg leading-relaxed text-muted-foreground">
-          Clerkflow is building the operating system for municipal clerks in US
-          towns under 5,000 — the places too small for enterprise ERP and too
-          important to run on spreadsheets forever.
+          Clerkflow is building the operating system for municipal clerks in
+          small towns across the US — the places too often overlooked by
+          enterprise software and too important to run on spreadsheets forever.
         </p>
       </div>
 

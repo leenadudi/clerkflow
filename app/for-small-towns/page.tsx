@@ -51,7 +51,7 @@ export default function ForSmallTownsPage() {
       <div className="max-w-2xl">
         <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-muted-foreground">
           <Building2 className="size-3.5 text-primary" />
-          Towns under 5,000
+          Built for small towns
         </span>
         <h1 className="mt-5 text-balance text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
           You don&apos;t need enterprise software. You need a clerk OS.
@@ -134,7 +134,7 @@ export default function ForSmallTownsPage() {
           </p>
           <ul className="mt-6 flex flex-col gap-2 text-sm">
             {[
-              'Approved by councils in towns under 1,500',
+              'Approved by councils in small towns across the country',
               'Quote letter ready for your next meeting packet',
               'Annual billing aligned to your fiscal year',
             ].map((item) => (

@@ -16,8 +16,8 @@ export function MarketingFooter() {
               </span>
             </Link>
             <p className="mt-3 text-sm text-muted-foreground">
-              The clerk operating system for towns under 5,000. Built for small
-              government.
+              The clerk operating system designed specifically for small towns.
+              Built for local government.
             </p>
           </div>
 
