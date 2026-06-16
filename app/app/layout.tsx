@@ -3,7 +3,7 @@ import { SidebarNav } from '@/components/clerk/sidebar-nav'
 import { TopBar } from '@/components/clerk/top-bar'
 
 export const metadata: Metadata = {
-  title: 'Clerkflow — Command Center',
+  title: 'Clerkflow — Home',
 }
 
 export default function ClerkLayout({

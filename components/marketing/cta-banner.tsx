@@ -19,21 +19,14 @@ export function CtaBanner({
           </h2>
           <p className="mt-2 text-muted-foreground">{description}</p>
         </div>
-        <div className="flex shrink-0 flex-col gap-3 sm:flex-row">
-          <Button
-            size="lg"
-            render={
-              <Link href="/contact">
-                Request a demo <ArrowRight className="size-4" />
-              </Link>
-            }
-          />
-          <Button
-            size="lg"
-            variant="outline"
-            render={<Link href="/app">Explore the dashboard</Link>}
-          />
-        </div>
+        <Button
+          size="lg"
+          render={
+            <Link href="/contact">
+              Request a demo <ArrowRight className="size-4" />
+            </Link>
+          }
+        />
       </CardContent>
     </Card>
   )

@@ -52,7 +52,7 @@ export default function HomePage() {
               with one calm workspace for meetings, public records, forms, and a
               public hub your residents will actually use.
             </p>
-            <div className="mt-7 flex flex-wrap items-center gap-3">
+            <div className="mt-7">
               <Button
                 size="lg"
                 render={
@@ -60,11 +60,6 @@ export default function HomePage() {
                     Request a demo <ArrowRight className="size-4" />
                   </Link>
                 }
-              />
-              <Button
-                size="lg"
-                variant="outline"
-                render={<Link href="/app">See the clerk dashboard</Link>}
               />
             </div>
           </div>
@@ -112,7 +107,7 @@ export default function HomePage() {
                     <h3 className="mt-4 text-lg font-semibold text-foreground">
                       {p.title}
                     </h3>
-                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                    <p className="mt-2 text-base leading-relaxed text-muted-foreground">
                       {p.body}
                     </p>
                   </CardContent>
@@ -169,11 +164,12 @@ export default function HomePage() {
                     </Link>
                   }
                 />
-                <Button
-                  size="lg"
-                  variant="outline"
-                  render={<Link href="/pricing">See full pricing</Link>}
-                />
+                <Link
+                  href="/pricing"
+                  className="text-center text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                >
+                  See full pricing
+                </Link>
               </div>
             </CardContent>
           </Card>
