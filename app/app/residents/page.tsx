@@ -1,5 +1,5 @@
 import { PageShell } from "@/components/page-shell";
 
 export default function AppResidentsPage() {
-  return <PageShell title="Residents" description="Resident registry and notifications." />;
+  return <PageShell variant="app" title="Residents" description="Resident registry and notifications." />;
 }

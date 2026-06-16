@@ -1,4 +1,4 @@
-export type RouteGroup = "marketing" | "app" | "resident";
+export type RouteGroup = "marketing" | "app" | "resident" | "internal";
 
 export type RouteEntry = {
   path: string;
@@ -45,10 +45,13 @@ export const routes: RouteEntry[] = [
   { path: "/riverside-oh/pay", label: "Pay", group: "resident" },
   { path: "/riverside-oh/search", label: "Search", group: "resident" },
   { path: "/riverside-oh/ask", label: "Ask", group: "resident" },
+
+  { path: "/internal/prospects", label: "Clerk prospecting", group: "internal" },
 ];
 
 export const groupLabels: Record<RouteGroup, string> = {
   marketing: "Marketing",
   app: "Clerk app",
   resident: "Resident hub (demo: riverside-oh)",
+  internal: "Internal (founder only)",
 };
