@@ -38,7 +38,7 @@ export function StatCard({
             {value}
           </p>
           {hint ? (
-            <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{hint}</p>
           ) : null}
         </div>
         <span

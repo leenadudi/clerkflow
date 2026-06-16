@@ -20,7 +20,7 @@ import { cn } from '@/lib/utils'
 import { TOWN } from '@/lib/data'
 
 const WORKSPACE = [
-  { label: 'Command Center', href: '/app', icon: LayoutGrid },
+  { label: 'Home', href: '/app', icon: LayoutGrid },
   { label: 'Meetings', href: '/app/meetings', icon: Calendar },
   { label: 'FOIA', href: '/app/foia', icon: FileText, badge: 2 },
   { label: 'Services', href: '/app/services', icon: ClipboardList },

@@ -3,10 +3,8 @@ import { Shield } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 const NAV = [
-  { label: 'Product', href: '/product' },
-  { label: 'For Small Towns', href: '/for-small-towns' },
+  { label: 'How it works', href: '/product' },
   { label: 'Pricing', href: '/pricing' },
-  { label: 'About', href: '/about' },
   { label: 'Contact', href: '/contact' },
 ]
 
@@ -37,7 +35,7 @@ export function MarketingHeader() {
           <Button
             variant="ghost"
             className="hidden sm:inline-flex"
-            render={<Link href="/app">Clerk sign in</Link>}
+            render={<Link href="/app">Log in</Link>}
           />
           <Button render={<Link href="/contact">Request demo</Link>} />
         </div>
