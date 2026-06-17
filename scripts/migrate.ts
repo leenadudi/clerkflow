@@ -6,13 +6,12 @@ dotenv.config()
 import { neon } from '@neondatabase/serverless'
 
 async function columnExists(sql: ReturnType<typeof neon>, table: string, column: string) {
-  const rows = await sql.query<{ exists: boolean }>(
-    `SELECT EXISTS (
+  const rows = (await sql`
+    SELECT EXISTS (
       SELECT 1 FROM information_schema.columns
-      WHERE table_name = $1 AND column_name = $2
-    ) AS exists`,
-    [table, column],
-  )
+      WHERE table_name = ${table} AND column_name = ${column}
+    ) AS exists
+  `) as Array<{ exists: boolean }>
   return rows[0]?.exists ?? false
 }
 
