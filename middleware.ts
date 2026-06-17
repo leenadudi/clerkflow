@@ -10,6 +10,7 @@ const isAppRoute = createRouteMatcher(['/app(.*)'])
 const isPublicAppRoute = createRouteMatcher([
   '/app/login(.*)',
   '/app/sign-up(.*)',
+  '/app/onboarding(.*)',
 ])
 
 function handleInternalAuth(request: NextRequest) {

@@ -1,8 +1,11 @@
 import type { Metadata } from 'next'
+import { redirect } from 'next/navigation'
 import { SidebarNav } from '@/components/clerk/sidebar-nav'
 import { TopBar } from '@/components/clerk/top-bar'
 import { WorkspaceProvider } from '@/components/clerk/workspace-context'
 import { getTownView, listFoiaRequests } from '@/lib/server/data'
+import { getAppContext, isClerkConfigured } from '@/lib/auth/app'
+import { isDatabaseConfigured } from '@/lib/db'
 
 export const metadata: Metadata = {
   title: 'Clerkflow — Home',
@@ -15,6 +18,16 @@ export default async function WorkspaceLayout({
 }: {
   children: React.ReactNode
 }) {
+  const context = await getAppContext()
+  if (
+    isClerkConfigured() &&
+    isDatabaseConfigured() &&
+    context.clerkUserId &&
+    !context.user
+  ) {
+    redirect('/app/onboarding')
+  }
+
   const town = await getTownView()
   const foiaRequests = await listFoiaRequests()
   const foiaAttentionCount = foiaRequests.filter(

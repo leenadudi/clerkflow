@@ -1,9 +1,10 @@
 import { auth, currentUser } from '@clerk/nextjs/server'
-import { eq } from 'drizzle-orm'
+import { and, eq, gt, isNull } from 'drizzle-orm'
 import { getDb, isDatabaseConfigured } from '@/lib/db'
 import { townToView } from '@/lib/db/mappers'
-import { towns, users, type Town, type User } from '@/lib/db/schema'
+import { towns, users, invitations, type Town, type User } from '@/lib/db/schema'
 import { TOWN } from '@/lib/data'
+import { acceptInvitation } from '@/lib/server/team'
 
 export function isClerkConfigured() {
   return Boolean(
@@ -29,7 +30,7 @@ async function getMockContext(): Promise<AppContext> {
   }
 }
 
-async function resolveDatabaseUser(clerkUserId: string | null, email?: string | null) {
+export async function resolveDatabaseUser(clerkUserId: string | null, email?: string | null) {
   if (!isDatabaseConfigured()) return null
 
   const db = getDb()
@@ -61,6 +62,35 @@ async function resolveDatabaseUser(clerkUserId: string | null, email?: string | 
   return null
 }
 
+function clerkDisplayName(
+  clerkUser: NonNullable<Awaited<ReturnType<typeof currentUser>>>,
+  email?: string | null,
+) {
+  const fromParts = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(' ').trim()
+  return fromParts || clerkUser.fullName || email?.split('@')[0] || 'Staff user'
+}
+
+// Accept a pending invite for this email (used on sign-in before town context exists).
+async function tryAcceptPendingInvite(
+  clerkUserId: string,
+  email: string,
+  name: string,
+): Promise<User | null> {
+  const db = getDb()
+  const normalizedEmail = email.trim().toLowerCase()
+
+  const pendingInvite = await db.query.invitations.findFirst({
+    where: and(
+      eq(invitations.email, normalizedEmail),
+      isNull(invitations.acceptedAt),
+      gt(invitations.expiresAt, new Date()),
+    ),
+  })
+  if (!pendingInvite) return null
+
+  return acceptInvitation(pendingInvite.token, clerkUserId, name, normalizedEmail)
+}
+
 async function getDemoTown(): Promise<Town | null> {
   if (!isDatabaseConfigured()) return null
   const db = getDb()
@@ -82,29 +112,55 @@ export async function getAppContext(): Promise<AppContext> {
     clerkUser?.primaryEmailAddress?.emailAddress ??
     clerkUser?.emailAddresses[0]?.emailAddress
 
-  const dbUser = await resolveDatabaseUser(userId, email)
-  const town = dbUser
-    ? await getDb().query.towns.findFirst({
-        where: eq(towns.id, dbUser.townId),
-      })
-    : await getDemoTown()
+  let dbUser = await resolveDatabaseUser(userId, email)
 
-  if (!town) {
+  if (!dbUser && userId && email && clerkUser) {
+    dbUser = await tryAcceptPendingInvite(
+      userId,
+      email,
+      clerkDisplayName(clerkUser, email),
+    )
+  }
+
+  if (dbUser) {
+    const town = await getDb().query.towns.findFirst({
+      where: eq(towns.id, dbUser.townId),
+    })
+    if (!town) return getMockContext()
+
+    return {
+      source: 'database',
+      town: townToView(town),
+      townId: town.id,
+      user: {
+        id: dbUser.id,
+        name: dbUser.name,
+        email: dbUser.email,
+        role: dbUser.role,
+      },
+      clerkUserId: userId,
+    }
+  }
+
+  if (!userId) {
+    const demoTown = await getDemoTown()
+    if (demoTown) {
+      return {
+        source: 'database',
+        town: townToView(demoTown),
+        townId: demoTown.id,
+        user: null,
+        clerkUserId: null,
+      }
+    }
     return getMockContext()
   }
 
   return {
     source: 'database',
-    town: townToView(town),
-    townId: town.id,
-    user: dbUser
-      ? {
-          id: dbUser.id,
-          name: dbUser.name,
-          email: dbUser.email,
-          role: dbUser.role,
-        }
-      : null,
+    town: TOWN,
+    townId: null,
+    user: null,
     clerkUserId: userId,
   }
 }

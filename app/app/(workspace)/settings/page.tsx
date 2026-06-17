@@ -43,7 +43,12 @@ export default function SettingsPage() {
 
   const load = useCallback(async () => {
     const res = await fetch('/api/app/team')
-    if (!res.ok) { setError('Failed to load team.'); return }
+    if (!res.ok) {
+      const body = (await res.json().catch(() => null)) as { error?: string } | null
+      setError(body?.error ?? 'Failed to load team.')
+      return
+    }
+    setError(null)
     setData(await res.json())
   }, [])
 

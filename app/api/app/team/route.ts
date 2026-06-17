@@ -27,6 +27,14 @@ export async function GET() {
     })
   } catch (e) {
     console.error('[/api/app/team]', e)
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (e instanceof Error) {
+      if (e.message === 'Unauthorized' || e.message === 'User is not linked to a town') {
+        return NextResponse.json(
+          { error: 'Sign in with a team account or accept your invite link.' },
+          { status: 401 },
+        )
+      }
+    }
+    return NextResponse.json({ error: 'Failed to load team' }, { status: 500 })
   }
 }
