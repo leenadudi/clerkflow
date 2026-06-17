@@ -66,7 +66,7 @@ export function ProspectsWorkspace() {
     population: '',
     clerkName: '',
     email: '',
-    phone: '',
+    contactInfo: '',
     notes: '',
   })
 
@@ -98,7 +98,8 @@ export function ProspectsWorkspace() {
         p.townName.toLowerCase().includes(q) ||
         p.state.toLowerCase().includes(q) ||
         p.clerkName.toLowerCase().includes(q) ||
-        p.email.toLowerCase().includes(q) ||
+        p.email?.toLowerCase().includes(q) ||
+        (p.contactInfo?.toLowerCase().includes(q) ?? false) ||
         p.notes.toLowerCase().includes(q)
       )
     })
@@ -118,6 +119,12 @@ export function ProspectsWorkspace() {
   async function onAddProspect(e: FormEvent) {
     e.preventDefault()
     setMessage('')
+    const email = form.email.trim()
+    const contactInfo = form.contactInfo.trim()
+    if (!email && !contactInfo) {
+      setMessage('Add an email or contact info (phone, address, etc.).')
+      return
+    }
     const res = await fetch('/api/prospects', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -126,8 +133,8 @@ export function ProspectsWorkspace() {
         state: form.state,
         population: form.population ? Number(form.population) : null,
         clerkName: form.clerkName,
-        email: form.email,
-        phone: form.phone || null,
+        email: email || null,
+        contactInfo: contactInfo || null,
         notes: form.notes,
       }),
     })
@@ -141,7 +148,7 @@ export function ProspectsWorkspace() {
       population: '',
       clerkName: '',
       email: '',
-      phone: '',
+      contactInfo: '',
       notes: '',
     })
     setMessage('Prospect added.')
@@ -161,7 +168,7 @@ export function ProspectsWorkspace() {
   }
 
   async function sendBatch() {
-    if (!confirm('Send demo emails to all not-contacted prospects?')) return
+    if (!confirm('Send demo emails to all not-contacted prospects with an email on file?')) return
     setMessage('')
     const res = await fetch('/api/prospects/send-batch', { method: 'POST' })
     const data = await res.json()
@@ -227,7 +234,7 @@ export function ProspectsWorkspace() {
               </CardTitle>
               <Input
                 type="search"
-                placeholder="Search town, clerk, email…"
+                placeholder="Search town, clerk, email, contact info…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="max-w-xs"
@@ -288,9 +295,13 @@ export function ProspectsWorkspace() {
                         </TableCell>
                         <TableCell>
                           <p className="text-foreground">{p.clerkName}</p>
-                          <p className="text-xs text-muted-foreground">{p.email}</p>
-                          {p.phone ? (
-                            <p className="text-xs text-muted-foreground">{p.phone}</p>
+                          {p.email ? (
+                            <p className="text-xs text-muted-foreground">{p.email}</p>
+                          ) : (
+                            <p className="text-xs italic text-muted-foreground">No email</p>
+                          )}
+                          {p.contactInfo ? (
+                            <p className="text-xs text-muted-foreground">{p.contactInfo}</p>
                           ) : null}
                         </TableCell>
                         <TableCell>
@@ -323,7 +334,8 @@ export function ProspectsWorkspace() {
                             size="sm"
                             variant="outline"
                             onClick={() => sendOne(p.id)}
-                            disabled={p.status === 'passed'}
+                            disabled={p.status === 'passed' || !p.email}
+                            title={!p.email ? 'Add an email to send outreach' : undefined}
                           >
                             <Mail className="size-4" /> Send
                           </Button>
@@ -370,17 +382,19 @@ export function ProspectsWorkspace() {
                   onChange={(e) => setForm({ ...form, clerkName: e.target.value })}
                 />
                 <Input
-                  required
                   type="email"
                   placeholder="Email"
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
                 />
                 <Input
-                  placeholder="Phone (optional)"
-                  value={form.phone}
-                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  placeholder="Contact info — phone, address, website"
+                  value={form.contactInfo}
+                  onChange={(e) => setForm({ ...form, contactInfo: e.target.value })}
                 />
+                <p className="text-xs text-muted-foreground">
+                  Email or contact info required.
+                </p>
                 <Textarea
                   placeholder="Notes — league list source, referral, etc."
                   value={form.notes}

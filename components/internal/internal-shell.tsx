@@ -56,6 +56,7 @@ export function InternalShell({ children }: { children: React.ReactNode }) {
               variant="ghost"
               size="sm"
               className="text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              nativeButton={false}
               render={<Link href="/">Public site</Link>}
             />
             <Button

@@ -39,6 +39,7 @@ export function MarketingHeader() {
           />
           <Button
             size="sm"
+            nativeButton={false}
             className="hidden sm:inline-flex sm:h-8 sm:px-2.5"
             render={<Link href="/contact">Request demo</Link>}
           />

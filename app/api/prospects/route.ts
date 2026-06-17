@@ -17,10 +17,18 @@ export async function POST(request: NextRequest) {
   }
 
   const body = (await request.json()) as CreateProspectInput;
-  if (!body.townName || !body.state || !body.clerkName || !body.email) {
+  const email = body.email?.trim() || null;
+  const contactInfo = body.contactInfo?.trim() || null;
+  if (!body.townName || !body.state || !body.clerkName) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
+  if (!email && !contactInfo) {
+    return NextResponse.json(
+      { error: "Provide an email or contact info" },
+      { status: 400 },
+    );
+  }
 
-  const prospect = await createProspect(body);
+  const prospect = await createProspect({ ...body, email, contactInfo });
   return NextResponse.json({ prospect }, { status: 201 });
 }

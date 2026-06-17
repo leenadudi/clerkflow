@@ -17,21 +17,43 @@ export const towns = pgTable('towns', {
   clerkRole: text('clerk_role').default('Town Clerk'),
   clerkInitials: text('clerk_initials'),
   clerkEmail: text('clerk_email'),
+  // Max team members allowed. 1 = primary admin only. Bump manually until Stripe is wired up.
+  maxMembers: integer('max_members').notNull().default(1),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 })
 
-export const users = pgTable('users', {
+export const users = pgTable(
+  'users',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    clerkUserId: text('clerk_user_id').unique(),
+    email: text('email').notNull(),
+    name: text('name').notNull(),
+    // 'admin' | 'member' — legacy values 'town_clerk' and 'staff' are treated as admin
+    role: text('role').notNull().default('member'),
+    townId: uuid('town_id')
+      .references(() => towns.id, { onDelete: 'cascade' })
+      .notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [uniqueIndex('users_town_email').on(table.townId, table.email)],
+)
+
+// role: 'admin' | 'member'
+export const invitations = pgTable('invitations', {
   id: uuid('id').primaryKey().defaultRandom(),
-  clerkUserId: text('clerk_user_id').unique(),
-  email: text('email').notNull(),
-  name: text('name').notNull(),
-  role: text('role').notNull().default('staff'),
   townId: uuid('town_id')
     .references(() => towns.id, { onDelete: 'cascade' })
     .notNull(),
+  email: text('email').notNull(),
+  role: text('role').notNull().default('member'),
+  token: text('token').notNull().unique(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  acceptedAt: timestamp('accepted_at', { withTimezone: true }),
+  createdById: uuid('created_by_id').references(() => users.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 })
 
 export const foiaRequests = pgTable(
@@ -128,8 +150,8 @@ export const prospects = pgTable('prospects', {
   state: text('state').notNull(),
   population: integer('population'),
   clerkName: text('clerk_name').notNull(),
-  email: text('email').notNull(),
-  phone: text('phone'),
+  email: text('email'),
+  contactInfo: text('contact_info'),
   notes: text('notes').notNull().default(''),
   status: text('status').notNull().default('not_contacted'),
   lastContactedAt: timestamp('last_contacted_at', { withTimezone: true }),
@@ -138,6 +160,7 @@ export const prospects = pgTable('prospects', {
 })
 
 export type Town = typeof towns.$inferSelect
+export type Invitation = typeof invitations.$inferSelect
 export type User = typeof users.$inferSelect
 export type FoiaRequestRow = typeof foiaRequests.$inferSelect
 export type FoiaMessageRow = typeof foiaMessages.$inferSelect

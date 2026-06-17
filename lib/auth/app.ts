@@ -118,6 +118,16 @@ export async function requireAppContext(): Promise<AppContext> {
   return context
 }
 
+// Admin = 'admin' role, or legacy primary-user roles ('town_clerk', 'staff').
+// 'member' is the only non-admin role (for invited secondary users).
+export async function requireAdmin(): Promise<AppContext & { user: NonNullable<AppContext['user']> }> {
+  const context = await requireStaffUser()
+  if (context.user.role === 'member') {
+    throw new Error('Forbidden')
+  }
+  return context
+}
+
 export async function requireStaffUser(): Promise<AppContext & { user: NonNullable<AppContext['user']> }> {
   if (!isClerkConfigured()) {
     const context = await requireAppContext()

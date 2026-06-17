@@ -11,8 +11,8 @@ export type Prospect = {
   state: string;
   population: number | null;
   clerkName: string;
-  email: string;
-  phone: string | null;
+  email: string | null;
+  contactInfo: string | null;
   notes: string;
   status: ProspectStatus;
   lastContactedAt: string | null;
@@ -25,7 +25,7 @@ export type CreateProspectInput = {
   state: string;
   population?: number | null;
   clerkName: string;
-  email: string;
-  phone?: string | null;
+  email?: string | null;
+  contactInfo?: string | null;
   notes?: string;
 };

@@ -37,11 +37,13 @@ export default function InternalWorkspaceLayout({
               variant="ghost"
               size="sm"
               className="text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              nativeButton={false}
               render={<Link href="/internal/prospects">Prospects</Link>}
             />
             <Button
               variant="ghost"
               size="sm"
+              nativeButton={false}
               className="text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
               render={<Link href="/">Public site</Link>}
             />

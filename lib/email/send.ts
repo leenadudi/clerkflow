@@ -9,6 +9,10 @@ type SendResult = {
 };
 
 export async function sendDemoRequestEmail(prospect: Prospect): Promise<SendResult> {
+  if (!prospect.email) {
+    return { ok: false, mode: "dry_run", error: "No email on file for this prospect" };
+  }
+
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.FROM_EMAIL ?? "leena@clerkflow.software";
   const { subject, text, html } = buildDemoRequestEmail(prospect);

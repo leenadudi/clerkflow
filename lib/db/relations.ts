@@ -5,6 +5,7 @@ import {
   foiaMessages,
   foiaRequests,
   foiaWorkflowSteps,
+  invitations,
   meetings,
   towns,
   users,
@@ -15,6 +16,7 @@ export const townsRelations = relations(towns, ({ many }) => ({
   foiaRequests: many(foiaRequests),
   meetings: many(meetings),
   boardTerms: many(boardTerms),
+  invitations: many(invitations),
 }))
 
 export const usersRelations = relations(users, ({ one, many }) => ({
@@ -23,6 +25,18 @@ export const usersRelations = relations(users, ({ one, many }) => ({
     references: [towns.id],
   }),
   assignedFoiaRequests: many(foiaRequests),
+  createdInvitations: many(invitations),
+}))
+
+export const invitationsRelations = relations(invitations, ({ one }) => ({
+  town: one(towns, {
+    fields: [invitations.townId],
+    references: [towns.id],
+  }),
+  createdBy: one(users, {
+    fields: [invitations.createdById],
+    references: [users.id],
+  }),
 }))
 
 export const foiaRequestsRelations = relations(foiaRequests, ({ one, many }) => ({

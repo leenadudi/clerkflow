@@ -15,6 +15,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
   if (!prospect) {
     return NextResponse.json({ error: "Prospect not found" }, { status: 404 });
   }
+  if (!prospect.email) {
+    return NextResponse.json({ error: "No email on file for this prospect" }, { status: 400 });
+  }
 
   const result = await sendDemoRequestEmail(prospect);
   if (!result.ok) {

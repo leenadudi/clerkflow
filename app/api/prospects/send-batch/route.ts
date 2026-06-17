@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const prospects = await listNotContacted();
+  const prospects = (await listNotContacted()).filter((p) => p.email);
   const results: Array<{ id: string; email: string; ok: boolean; mode?: string; error?: string }> = [];
 
   for (const prospect of prospects) {
@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     }
     results.push({
       id: prospect.id,
-      email: prospect.email,
+      email: prospect.email!,
       ok: send.ok,
       mode: send.mode,
       error: send.error,

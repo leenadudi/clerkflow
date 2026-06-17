@@ -16,6 +16,14 @@ const DATA_FILE = path.join(DATA_DIR, "prospects.json");
 
 let dbBootstrapped = false;
 
+function normalizeProspect(raw: Prospect & { phone?: string | null }): Prospect {
+  const { phone, ...rest } = raw
+  return {
+    ...rest,
+    contactInfo: rest.contactInfo ?? phone ?? null,
+  }
+}
+
 async function bootstrapProspectsDb(): Promise<void> {
   if (dbBootstrapped) return;
   dbBootstrapped = true;
@@ -25,7 +33,9 @@ async function bootstrapProspectsDb(): Promise<void> {
 
   try {
     const raw = await fs.readFile(DATA_FILE, "utf8");
-    const fromFile = JSON.parse(raw) as Prospect[];
+    const fromFile = (
+      JSON.parse(raw) as Array<Prospect & { phone?: string | null }>
+    ).map(normalizeProspect);
     const imported = await importProspectsToDb(fromFile);
     if (imported > 0) {
       console.log(`Imported ${imported} prospect(s) from data/prospects.json into Neon.`);
@@ -40,7 +50,9 @@ async function ensureFileStore(): Promise<Prospect[]> {
   await fs.mkdir(DATA_DIR, { recursive: true });
   try {
     const raw = await fs.readFile(DATA_FILE, "utf8");
-    return JSON.parse(raw) as Prospect[];
+    return (JSON.parse(raw) as Array<Prospect & { phone?: string | null }>).map(
+      normalizeProspect,
+    );
   } catch {
     const seed = defaultProspects();
     await fs.writeFile(DATA_FILE, JSON.stringify(seed, null, 2));
@@ -58,7 +70,7 @@ function defaultProspects(): Prospect[] {
       population: 1200,
       clerkName: "Jane Miller",
       email: "clerk@riverside-oh.example",
-      phone: null,
+      contactInfo: null,
       notes: "Example row — replace with real prospect from league list.",
       status: "not_contacted",
       lastContactedAt: null,
@@ -104,8 +116,8 @@ export async function createProspect(input: CreateProspectInput): Promise<Prospe
     state: input.state.trim().toUpperCase(),
     population: input.population ?? null,
     clerkName: input.clerkName.trim(),
-    email: input.email.trim().toLowerCase(),
-    phone: input.phone?.trim() || null,
+    email: input.email?.trim().toLowerCase() || null,
+    contactInfo: input.contactInfo?.trim() || null,
     notes: input.notes?.trim() || "",
     status: "not_contacted",
     lastContactedAt: null,

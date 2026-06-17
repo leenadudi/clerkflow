@@ -1,5 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
+import { redirect } from 'next/navigation'
+import { auth } from '@clerk/nextjs/server'
 import {
   ShieldCheck,
   ArrowRight,
@@ -31,7 +33,10 @@ const PILLARS = [
   },
 ]
 
-export default function HomePage() {
+export default async function HomePage() {
+  const { userId } = await auth()
+  if (userId) redirect('/app')
+
   return (
     <div className="flex min-h-screen flex-col">
       <MarketingHeader />
