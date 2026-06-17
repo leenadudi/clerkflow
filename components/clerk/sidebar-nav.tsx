@@ -17,12 +17,12 @@ import {
   Shield,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { TOWN } from '@/lib/data'
+import { useWorkspace } from './workspace-context'
 
 const WORKSPACE = [
   { label: 'Home', href: '/app', icon: LayoutGrid },
   { label: 'Meetings', href: '/app/meetings', icon: Calendar },
-  { label: 'FOIA', href: '/app/foia', icon: FileText, badge: 2 },
+  { label: 'FOIA', href: '/app/foia', icon: FileText, badgeKey: 'foia' as const },
   { label: 'Services', href: '/app/services', icon: ClipboardList },
   { label: 'Boards', href: '/app/boards', icon: Users },
   { label: 'Residents', href: '/app/residents', icon: UserSquare2 },
@@ -39,9 +39,11 @@ const MANAGE = [
 function NavLink({
   item,
   active,
+  badge,
 }: {
-  item: { label: string; href: string; icon: typeof LayoutGrid; badge?: number }
+  item: { label: string; href: string; icon: typeof LayoutGrid; badgeKey?: 'foia' }
   active: boolean
+  badge?: number
 }) {
   const Icon = item.icon
   return (
@@ -57,9 +59,9 @@ function NavLink({
     >
       <Icon className="size-[18px] shrink-0" aria-hidden />
       <span className="flex-1 truncate">{item.label}</span>
-      {item.badge ? (
+      {badge ? (
         <span className="flex size-5 items-center justify-center rounded-full bg-destructive text-[11px] font-semibold text-destructive-foreground">
-          {item.badge}
+          {badge}
         </span>
       ) : null}
     </Link>
@@ -68,6 +70,7 @@ function NavLink({
 
 export function SidebarNav() {
   const pathname = usePathname()
+  const { town, foiaAttentionCount } = useWorkspace()
   const isActive = (href: string) =>
     href === '/app' ? pathname === '/app' : pathname.startsWith(href)
 
@@ -80,7 +83,7 @@ export function SidebarNav() {
         <div className="min-w-0">
           <p className="text-sm font-semibold leading-tight">Clerkflow</p>
           <p className="truncate text-xs text-sidebar-foreground/60">
-            {TOWN.shortName}
+            {town.shortName}
           </p>
         </div>
       </div>
@@ -91,7 +94,12 @@ export function SidebarNav() {
         </p>
         <div className="flex flex-col gap-1">
           {WORKSPACE.map((item) => (
-            <NavLink key={item.href} item={item} active={isActive(item.href)} />
+            <NavLink
+              key={item.href}
+              item={item}
+              active={isActive(item.href)}
+              badge={item.badgeKey === 'foia' ? foiaAttentionCount : undefined}
+            />
           ))}
         </div>
 
@@ -107,12 +115,12 @@ export function SidebarNav() {
 
       <div className="flex items-center gap-3 border-t border-sidebar-border px-4 py-4">
         <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-sidebar-accent text-xs font-semibold text-sidebar-accent-foreground">
-          {TOWN.clerk.initials}
+          {town.clerk.initials}
         </span>
         <div className="min-w-0">
-          <p className="truncate text-sm font-medium">{TOWN.clerk.name}</p>
+          <p className="truncate text-sm font-medium">{town.clerk.name}</p>
           <p className="truncate text-xs text-sidebar-foreground/60">
-            {TOWN.clerk.role}
+            {town.clerk.role}
           </p>
         </div>
       </div>

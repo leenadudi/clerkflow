@@ -1,23 +1,57 @@
 'use client'
 
 import { useState } from 'react'
+import { useParams } from 'next/navigation'
 import { Search, CheckCircle2, Circle, FileSearch } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ResidentHeader } from '@/components/resident/header'
 import { StatusPill } from '@/components/status-pill'
+import type { StatusKey } from '@/components/status-pill'
 
-const TIMELINE = [
-  { label: 'Request received', meta: 'Jun 9, 2026', state: 'done' },
-  { label: 'Acknowledgment sent', meta: 'Jun 9, 2026', state: 'done' },
-  { label: 'Records being gathered', meta: 'Jun 11, 2026', state: 'done' },
-  { label: 'Under review & redaction', meta: 'In progress', state: 'current' },
-  { label: 'Records released', meta: 'Pending', state: 'pending' },
-] as const
+type TrackResult = {
+  publicId: string
+  title: string
+  status: StatusKey
+  clerkEmail?: string
+  timeline: Array<{
+    label: string
+    meta: string
+    state: 'done' | 'current' | 'pending'
+  }>
+}
 
 export default function TrackRequestPage() {
-  const [submitted, setSubmitted] = useState(false)
+  const params = useParams<{ town: string }>()
+  const townSlug = params.town
+  const [confirmation, setConfirmation] = useState('FOIA-1042')
+  const [result, setResult] = useState<TrackResult | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault()
+    setLoading(true)
+    setError(null)
+    setResult(null)
+
+    try {
+      const response = await fetch(
+        `/api/public/track?town=${encodeURIComponent(townSlug)}&code=${encodeURIComponent(confirmation)}`,
+      )
+      const data = await response.json()
+      if (!response.ok) {
+        setError(data.error ?? 'Request not found')
+        return
+      }
+      setResult(data)
+    } catch {
+      setError('Unable to look up that confirmation number.')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -36,41 +70,43 @@ export default function TrackRequestPage() {
           <CardContent className="p-5">
             <form
               className="flex flex-col gap-3 sm:flex-row"
-              onSubmit={(e) => {
-                e.preventDefault()
-                setSubmitted(true)
-              }}
+              onSubmit={handleSubmit}
             >
               <div className="relative flex-1">
                 <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  defaultValue="FOIA-1042"
+                  value={confirmation}
+                  onChange={(event) => setConfirmation(event.target.value)}
                   placeholder="e.g. FOIA-1042"
                   className="pl-9"
                   aria-label="Confirmation number"
                 />
               </div>
-              <Button type="submit">Track request</Button>
+              <Button type="submit" disabled={loading}>
+                {loading ? 'Looking up…' : 'Track request'}
+              </Button>
             </form>
           </CardContent>
         </Card>
 
-        {submitted ? (
+        {error ? (
+          <p className="mt-4 text-sm text-destructive">{error}</p>
+        ) : null}
+
+        {result ? (
           <Card className="mt-6">
             <CardHeader className="flex flex-row items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-medium text-muted-foreground">
-                  FOIA-1042
+                  {result.publicId}
                 </p>
-                <CardTitle className="mt-0.5 text-base">
-                  Police incident reports — Maple St, June 2026
-                </CardTitle>
+                <CardTitle className="mt-0.5 text-base">{result.title}</CardTitle>
               </div>
-              <StatusPill status="in-progress" />
+              <StatusPill status={result.status} />
             </CardHeader>
             <CardContent>
               <ol className="flex flex-col gap-5">
-                {TIMELINE.map((step) => (
+                {result.timeline.map((step) => (
                   <li key={step.label} className="flex items-start gap-3">
                     {step.state === 'done' ? (
                       <CheckCircle2 className="size-5 shrink-0 text-success" />
@@ -98,7 +134,7 @@ export default function TrackRequestPage() {
               </ol>
               <p className="mt-6 rounded-lg bg-secondary/60 p-3 text-sm text-muted-foreground">
                 Questions about this request? Contact the Town Clerk&apos;s office
-                at clerk@riverside-oh.gov.
+                {result.clerkEmail ? ` at ${result.clerkEmail}` : ''}.
               </p>
             </CardContent>
           </Card>

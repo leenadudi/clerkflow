@@ -46,6 +46,7 @@ export const routes: RouteEntry[] = [
   { path: "/riverside-oh/search", label: "Search", group: "resident" },
   { path: "/riverside-oh/ask", label: "Ask", group: "resident" },
 
+  { path: "/internal/login", label: "Internal login", group: "internal" },
   { path: "/internal/prospects", label: "Clerk prospecting", group: "internal" },
 ];
 

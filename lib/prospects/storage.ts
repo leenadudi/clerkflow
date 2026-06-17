@@ -1,11 +1,42 @@
 import { promises as fs } from "fs";
 import path from "path";
+import { isDatabaseConfigured } from "@/lib/db";
+import {
+  createProspectInDb,
+  getProspectFromDb,
+  importProspectsToDb,
+  listNotContactedFromDb,
+  listProspectsFromDb,
+  updateProspectStatusInDb,
+} from "./db";
 import type { CreateProspectInput, Prospect, ProspectStatus } from "./types";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const DATA_FILE = path.join(DATA_DIR, "prospects.json");
 
-async function ensureStore(): Promise<Prospect[]> {
+let dbBootstrapped = false;
+
+async function bootstrapProspectsDb(): Promise<void> {
+  if (dbBootstrapped) return;
+  dbBootstrapped = true;
+
+  const existing = await listProspectsFromDb();
+  if (existing.length > 0) return;
+
+  try {
+    const raw = await fs.readFile(DATA_FILE, "utf8");
+    const fromFile = JSON.parse(raw) as Prospect[];
+    const imported = await importProspectsToDb(fromFile);
+    if (imported > 0) {
+      console.log(`Imported ${imported} prospect(s) from data/prospects.json into Neon.`);
+    }
+  } catch {
+    const seed = defaultProspects();
+    await importProspectsToDb(seed);
+  }
+}
+
+async function ensureFileStore(): Promise<Prospect[]> {
   await fs.mkdir(DATA_DIR, { recursive: true });
   try {
     const raw = await fs.readFile(DATA_FILE, "utf8");
@@ -37,22 +68,35 @@ function defaultProspects(): Prospect[] {
   ];
 }
 
-async function save(prospects: Prospect[]): Promise<void> {
+async function saveToFile(prospects: Prospect[]): Promise<void> {
   await fs.mkdir(DATA_DIR, { recursive: true });
   await fs.writeFile(DATA_FILE, JSON.stringify(prospects, null, 2));
 }
 
 export async function listProspects(): Promise<Prospect[]> {
-  return ensureStore();
+  if (isDatabaseConfigured()) {
+    await bootstrapProspectsDb();
+    return listProspectsFromDb();
+  }
+  return ensureFileStore();
 }
 
 export async function getProspect(id: string): Promise<Prospect | null> {
-  const prospects = await ensureStore();
+  if (isDatabaseConfigured()) {
+    await bootstrapProspectsDb();
+    return getProspectFromDb(id);
+  }
+  const prospects = await ensureFileStore();
   return prospects.find((p) => p.id === id) ?? null;
 }
 
 export async function createProspect(input: CreateProspectInput): Promise<Prospect> {
-  const prospects = await ensureStore();
+  if (isDatabaseConfigured()) {
+    await bootstrapProspectsDb();
+    return createProspectInDb(input);
+  }
+
+  const prospects = await ensureFileStore();
   const now = new Date().toISOString();
   const prospect: Prospect = {
     id: crypto.randomUUID(),
@@ -69,7 +113,7 @@ export async function createProspect(input: CreateProspectInput): Promise<Prospe
     updatedAt: now,
   };
   prospects.push(prospect);
-  await save(prospects);
+  await saveToFile(prospects);
   return prospect;
 }
 
@@ -78,7 +122,12 @@ export async function updateProspectStatus(
   status: ProspectStatus,
   lastContactedAt?: string | null,
 ): Promise<Prospect | null> {
-  const prospects = await ensureStore();
+  if (isDatabaseConfigured()) {
+    await bootstrapProspectsDb();
+    return updateProspectStatusInDb(id, status, lastContactedAt);
+  }
+
+  const prospects = await ensureFileStore();
   const index = prospects.findIndex((p) => p.id === id);
   if (index === -1) return null;
 
@@ -88,11 +137,15 @@ export async function updateProspectStatus(
     lastContactedAt: lastContactedAt ?? prospects[index].lastContactedAt,
     updatedAt: new Date().toISOString(),
   };
-  await save(prospects);
+  await saveToFile(prospects);
   return prospects[index];
 }
 
 export async function listNotContacted(): Promise<Prospect[]> {
-  const prospects = await ensureStore();
+  if (isDatabaseConfigured()) {
+    await bootstrapProspectsDb();
+    return listNotContactedFromDb();
+  }
+  const prospects = await ensureFileStore();
   return prospects.filter((p) => p.status === "not_contacted");
 }

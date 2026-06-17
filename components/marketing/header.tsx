@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Shield } from 'lucide-react'
+import { AuthHeaderControls } from '@/components/auth/auth-header-controls'
 import { Button } from '@/components/ui/button'
 
 const NAV = [
@@ -32,12 +33,15 @@ export function MarketingHeader() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            className="hidden sm:inline-flex"
-            render={<Link href="/app">Log in</Link>}
+          <AuthHeaderControls
+            signInLabel="Log in"
+            signUpLabel="Sign up"
           />
-          <Button render={<Link href="/contact">Request demo</Link>} />
+          <Button
+            size="sm"
+            className="hidden sm:inline-flex sm:h-8 sm:px-2.5"
+            render={<Link href="/contact">Request demo</Link>}
+          />
         </div>
       </div>
     </header>
