@@ -1,40 +1,74 @@
 import { and, asc, desc, eq } from 'drizzle-orm'
 import type { StatusKey } from '@/components/status-pill'
 import {
+  ACTION_ITEMS,
   AGENDA,
+  ATTENDANCE,
   BOARD_TERMS,
   FOIA_REQUESTS,
   LICENSES,
   MEETINGS,
+  MOTIONS,
   type AgendaItem,
   type BoardTerm,
   type FoiaRequest,
   type License,
   type Meeting,
+  type MeetingActionItem,
+  type MeetingAttendance,
+  type Motion,
 } from '@/lib/data'
 import { getDb, isDatabaseConfigured, withTownContext } from '@/lib/db'
 import {
   agendaToView,
+  auditLogToView,
   boardTermToView,
+  computeRecordsStatus,
+  foiaDocumentToView,
   foiaMessageToView,
   foiaToView,
   licenseToView,
+  meetingActionItemToView,
+  meetingAttendanceToView,
   meetingToView,
+  motionToView,
   workflowStepToView,
+  type AuditLogEntry,
   type FoiaThreadMessage,
+  type RecordsDocument,
   type WorkflowStep,
 } from '@/lib/db/mappers'
 import {
   agendaItems,
   boardTerms,
+  foiaAuditLog,
+  foiaDocuments,
   foiaMessages,
   foiaRequests,
   foiaWorkflowSteps,
   licenses,
+  meetingActionItems,
+  meetingAttendance,
   meetings,
+  motions,
   towns,
 } from '@/lib/db/schema'
 import { getAppContext } from '@/lib/auth/app'
+
+// ---------------------------------------------------------------------------
+// Business day utilities (private)
+// ---------------------------------------------------------------------------
+
+function addBusinessDays(start: Date, days: number): Date {
+  const d = new Date(start)
+  let added = 0
+  while (added < days) {
+    d.setDate(d.getDate() + 1)
+    const dow = d.getDay()
+    if (dow !== 0 && dow !== 6) added++
+  }
+  return d
+}
 
 export async function getTownView() {
   const context = await getAppContext()
@@ -56,7 +90,10 @@ export async function listFoiaRequests(): Promise<FoiaRequest[]> {
         },
       },
     })
-    return rows.map((row) => foiaToView(row, row.assignedUser, context.user?.id ?? null))
+    return rows.map((row) => {
+      const view = foiaToView(row, row.assignedUser, context.user?.id ?? null)
+      return { ...view, status: computeRecordsStatus(view.status, row.deadlineAt) as any }
+    })
   })
 }
 
@@ -274,50 +311,78 @@ export type CreateFoiaInput = {
   title: string
   requesterName: string
   requesterEmail?: string
+  requesterPhone?: string
+  requesterOrg?: string
+  isAnonymous?: boolean
   summary: string
+  source?: string
+  formatRequested?: string
+  deliveryMethod?: string
+  priority?: string
+  dateRangeFrom?: Date
+  dateRangeTo?: Date
+  deadlineDays?: number
   assignedUserId?: string | null
 }
 
-export async function createFoiaRequest(input: CreateFoiaInput) {
+export async function createFoiaRequest(data: CreateFoiaInput): Promise<FoiaRequest> {
   const context = await getAppContext()
-  if (!context.townId) throw new Error('Database is not configured')
+
+  // Fall back to first mock request if no DB
+  if (!context.townId) return FOIA_REQUESTS[0]
 
   return withTownContext(context.townId, async (db) => {
-    const latest = await db.query.foiaRequests.findMany({
+    const all = await db.query.foiaRequests.findMany({
       where: eq(foiaRequests.townId, context.townId!),
-      orderBy: [desc(foiaRequests.createdAt)],
-      limit: 1,
+      columns: { publicId: true },
     })
 
-    const nextNumber = latest[0]?.publicId
-      ? Number.parseInt(latest[0].publicId.replace('FOIA-', ''), 10) + 1
-      : 1000
+    const year = new Date().getFullYear()
+    const nextSeq = all.length + 1
+    const publicId = `FOIA-${year}-${String(nextSeq).padStart(4, '0')}`
 
     const receivedAt = new Date()
-    const deadlineAt = new Date(receivedAt)
-    deadlineAt.setDate(deadlineAt.getDate() + 7)
+    const deadlineAt = addBusinessDays(receivedAt, data.deadlineDays ?? 5)
 
     const [created] = await db
       .insert(foiaRequests)
       .values({
         townId: context.townId!,
-        publicId: `FOIA-${nextNumber}`,
-        title: input.title,
-        requesterName: input.requesterName,
-        requesterEmail: input.requesterEmail,
-        summary: input.summary,
+        publicId,
+        title: data.title,
+        requesterName: data.requesterName,
+        requesterEmail: data.requesterEmail,
+        requesterPhone: data.requesterPhone,
+        requesterOrg: data.requesterOrg,
+        isAnonymous: data.isAnonymous ?? false,
+        summary: data.summary,
+        source: data.source ?? 'web',
+        formatRequested: data.formatRequested ?? 'any',
+        deliveryMethod: data.deliveryMethod ?? 'email',
+        priority: data.priority ?? 'normal',
+        dateRangeFrom: data.dateRangeFrom,
+        dateRangeTo: data.dateRangeTo,
         status: 'new',
-        assignedUserId: input.assignedUserId ?? context.user?.id ?? null,
+        assignedUserId: data.assignedUserId ?? context.user?.id ?? null,
         receivedAt,
         deadlineAt,
       })
       .returning()
 
+    // Initial audit log entry
+    await db.insert(foiaAuditLog).values({
+      foiaRequestId: created.id,
+      action: 'created',
+      actorName: 'System',
+      actorRole: 'System',
+      detail: 'Request received',
+    })
+
     await db.insert(foiaMessages).values({
       foiaRequestId: created.id,
-      authorName: input.requesterName,
+      authorName: data.requesterName,
       authorRole: 'Requester',
-      body: input.summary,
+      body: data.summary,
     })
 
     await db.insert(foiaWorkflowSteps).values([
@@ -328,23 +393,317 @@ export async function createFoiaRequest(input: CreateFoiaInput) {
       { foiaRequestId: created.id, label: 'Release to requester', meta: 'Pending', state: 'pending', sortOrder: 5 },
     ])
 
+    // Send acknowledgment email if Resend is configured and we have an email
+    if (process.env.RESEND_API_KEY && data.requesterEmail && !data.isAnonymous) {
+      try {
+        const { Resend } = await import('resend')
+        const resend = new Resend(process.env.RESEND_API_KEY)
+        await resend.emails.send({
+          from: 'noreply@clerkflow.software',
+          to: data.requesterEmail,
+          subject: `Open records request received — ${publicId}`,
+          text: [
+            `Dear ${data.requesterName},`,
+            '',
+            `Your open records request has been received and logged as ${publicId}.`,
+            `You can track the status of your request at any time using your confirmation number.`,
+            '',
+            'We will respond within the statutory timeframe.',
+            '',
+            'Thank you,',
+            context.town.clerk.name,
+          ].join('\n'),
+        })
+        await db
+          .update(foiaRequests)
+          .set({ ackSentAt: new Date() })
+          .where(eq(foiaRequests.id, created.id))
+      } catch {
+        // Email failure must never throw — log silently
+      }
+    }
+
     return foiaToView(created, null, context.user?.id ?? null)
   })
 }
 
-export async function updateFoiaStatus(publicId: string, status: StatusKey) {
+export async function getFoiaDocuments(publicId: string): Promise<RecordsDocument[]> {
   const context = await getAppContext()
-  if (!context.townId) throw new Error('Database is not configured')
+  if (!context.townId) return []
 
   return withTownContext(context.townId, async (db) => {
-    const [updated] = await db
-      .update(foiaRequests)
-      .set({ status, updatedAt: new Date() })
-      .where(and(eq(foiaRequests.townId, context.townId!), eq(foiaRequests.publicId, publicId)))
+    const request = await db.query.foiaRequests.findFirst({
+      where: and(eq(foiaRequests.townId, context.townId!), eq(foiaRequests.publicId, publicId)),
+      columns: { id: true },
+    })
+    if (!request) return []
+
+    const rows = await db.query.foiaDocuments.findMany({
+      where: eq(foiaDocuments.foiaRequestId, request.id),
+      orderBy: [asc(foiaDocuments.createdAt)],
+    })
+    return rows.map(foiaDocumentToView)
+  })
+}
+
+export async function addFoiaDocument(
+  publicId: string,
+  data: {
+    name: string
+    fileUrl: string
+    fileSize?: number
+    mimeType?: string
+    uploadedBy: string
+    isRedacted?: boolean
+  },
+): Promise<RecordsDocument | null> {
+  const context = await getAppContext()
+  if (!context.townId) return null
+
+  return withTownContext(context.townId, async (db) => {
+    const request = await db.query.foiaRequests.findFirst({
+      where: and(eq(foiaRequests.townId, context.townId!), eq(foiaRequests.publicId, publicId)),
+      columns: { id: true },
+    })
+    if (!request) return null
+
+    const [doc] = await db
+      .insert(foiaDocuments)
+      .values({
+        foiaRequestId: request.id,
+        name: data.name,
+        fileUrl: data.fileUrl,
+        fileSize: data.fileSize ?? null,
+        mimeType: data.mimeType ?? null,
+        uploadedBy: data.uploadedBy,
+        isRedacted: data.isRedacted ?? false,
+      })
       .returning()
 
-    if (!updated) return null
-    return foiaToView(updated, null, context.user?.id ?? null)
+    await db.insert(foiaAuditLog).values({
+      foiaRequestId: request.id,
+      action: 'document_added',
+      actorName: data.uploadedBy,
+      actorRole: context.town.clerk.role,
+      detail: data.name,
+    })
+
+    return foiaDocumentToView(doc)
+  })
+}
+
+export async function getFoiaAuditLog(publicId: string): Promise<AuditLogEntry[]> {
+  const context = await getAppContext()
+
+  if (!context.townId) {
+    return [
+      {
+        id: 'mock-1',
+        action: 'created',
+        actorName: 'System',
+        actorRole: 'System',
+        detail: 'Request received',
+        createdAt: 'Jun 9, 2026, 9:14 AM',
+      },
+      {
+        id: 'mock-2',
+        action: 'status_changed',
+        actorName: 'Barbara Jensen',
+        actorRole: 'Town Clerk',
+        detail: 'in_progress',
+        createdAt: 'Jun 9, 2026, 2:40 PM',
+      },
+    ]
+  }
+
+  return withTownContext(context.townId, async (db) => {
+    const request = await db.query.foiaRequests.findFirst({
+      where: and(eq(foiaRequests.townId, context.townId!), eq(foiaRequests.publicId, publicId)),
+      columns: { id: true },
+    })
+    if (!request) return []
+
+    const rows = await db.query.foiaAuditLog.findMany({
+      where: eq(foiaAuditLog.foiaRequestId, request.id),
+      orderBy: [asc(foiaAuditLog.createdAt)],
+    })
+    return rows.map(auditLogToView)
+  })
+}
+
+export async function fulfillFoiaRequest(publicId: string, note?: string): Promise<boolean> {
+  const context = await getAppContext()
+  if (!context.townId) return false
+
+  return withTownContext(context.townId, async (db) => {
+    const request = await db.query.foiaRequests.findFirst({
+      where: and(eq(foiaRequests.townId, context.townId!), eq(foiaRequests.publicId, publicId)),
+    })
+    if (!request) return false
+
+    const now = new Date()
+    const updatedNotes = note
+      ? [request.internalNotes, note].filter(Boolean).join('\n\n')
+      : request.internalNotes ?? undefined
+
+    await db
+      .update(foiaRequests)
+      .set({ status: 'complete', fulfilledAt: now, internalNotes: updatedNotes, updatedAt: now })
+      .where(eq(foiaRequests.id, request.id))
+
+    await db.insert(foiaAuditLog).values({
+      foiaRequestId: request.id,
+      action: 'fulfilled',
+      actorName: context.user?.name ?? 'Staff',
+      actorRole: context.town.clerk.role,
+      detail: note ?? null,
+    })
+
+    return true
+  })
+}
+
+export async function denyFoiaRequest(publicId: string, reason: string): Promise<boolean> {
+  const context = await getAppContext()
+  if (!context.townId) return false
+
+  return withTownContext(context.townId, async (db) => {
+    const request = await db.query.foiaRequests.findFirst({
+      where: and(eq(foiaRequests.townId, context.townId!), eq(foiaRequests.publicId, publicId)),
+      columns: { id: true },
+    })
+    if (!request) return false
+
+    const now = new Date()
+
+    await db
+      .update(foiaRequests)
+      .set({ status: 'denied', deniedAt: now, denialReason: reason, updatedAt: now })
+      .where(eq(foiaRequests.id, request.id))
+
+    await db.insert(foiaAuditLog).values({
+      foiaRequestId: request.id,
+      action: 'denied',
+      actorName: context.user?.name ?? 'Staff',
+      actorRole: context.town.clerk.role,
+      detail: reason,
+    })
+
+    return true
+  })
+}
+
+export async function updateFoiaStatus(publicId: string, status: string): Promise<boolean> {
+  const context = await getAppContext()
+  if (!context.townId) return false
+
+  return withTownContext(context.townId, async (db) => {
+    const request = await db.query.foiaRequests.findFirst({
+      where: and(eq(foiaRequests.townId, context.townId!), eq(foiaRequests.publicId, publicId)),
+      columns: { id: true },
+    })
+    if (!request) return false
+
+    await db
+      .update(foiaRequests)
+      .set({ status, updatedAt: new Date() })
+      .where(eq(foiaRequests.id, request.id))
+
+    await db.insert(foiaAuditLog).values({
+      foiaRequestId: request.id,
+      action: 'status_changed',
+      actorName: context.user?.name ?? 'Staff',
+      actorRole: context.town.clerk.role,
+      detail: status,
+    })
+
+    return true
+  })
+}
+
+export async function updateFoiaInternalNotes(publicId: string, notes: string): Promise<boolean> {
+  const context = await getAppContext()
+  if (!context.townId) return false
+
+  return withTownContext(context.townId, async (db) => {
+    const request = await db.query.foiaRequests.findFirst({
+      where: and(eq(foiaRequests.townId, context.townId!), eq(foiaRequests.publicId, publicId)),
+      columns: { id: true },
+    })
+    if (!request) return false
+
+    await db
+      .update(foiaRequests)
+      .set({ internalNotes: notes, updatedAt: new Date() })
+      .where(eq(foiaRequests.id, request.id))
+
+    return true
+  })
+}
+
+export async function sendFoiaMessage(
+  publicId: string,
+  body: string,
+  authorName: string,
+  authorRole: string,
+): Promise<boolean> {
+  const context = await getAppContext()
+  if (!context.townId) return false
+
+  return withTownContext(context.townId, async (db) => {
+    const request = await db.query.foiaRequests.findFirst({
+      where: and(eq(foiaRequests.townId, context.townId!), eq(foiaRequests.publicId, publicId)),
+    })
+    if (!request) return false
+
+    await db.insert(foiaMessages).values({
+      foiaRequestId: request.id,
+      authorName,
+      authorRole,
+      body,
+    })
+
+    await db.insert(foiaAuditLog).values({
+      foiaRequestId: request.id,
+      action: 'message_sent',
+      actorName: authorName,
+      actorRole: authorRole,
+      detail: body.slice(0, 60),
+    })
+
+    // Send email notification to requester for external (non-requester) messages
+    if (
+      process.env.RESEND_API_KEY &&
+      request.requesterEmail &&
+      !request.isAnonymous &&
+      authorRole !== 'Requester'
+    ) {
+      try {
+        const { Resend } = await import('resend')
+        const resend = new Resend(process.env.RESEND_API_KEY)
+        await resend.emails.send({
+          from: 'noreply@clerkflow.software',
+          to: request.requesterEmail,
+          subject: `Update on your open records request — ${publicId}`,
+          text: [
+            `Dear ${request.requesterName},`,
+            '',
+            `You have a new message regarding your open records request ${publicId}:`,
+            '',
+            body,
+            '',
+            'To track your request, visit your town\'s resident hub and enter your confirmation number.',
+            '',
+            'Thank you,',
+            context.town.clerk.name,
+          ].join('\n'),
+        })
+      } catch {
+        // Email failure must never throw — log silently
+      }
+    }
+
+    return true
   })
 }
 
@@ -378,6 +737,8 @@ export type CreateMeetingInput = {
   startsAt: Date
   location: string
   status?: StatusKey
+  meetingType?: string
+  internalNotes?: string
 }
 
 export async function createMeeting(input: CreateMeetingInput) {
@@ -401,6 +762,8 @@ export async function createMeeting(input: CreateMeetingInput) {
         startsAt: input.startsAt,
         location: input.location,
         status: input.status ?? 'draft',
+        meetingType: input.meetingType ?? 'council',
+        internalNotes: input.internalNotes ?? '',
       })
       .returning()
 
@@ -661,5 +1024,333 @@ export async function submitPublicFoia(
       publicId: created.publicId,
       message: 'Your request has been logged. Save your confirmation number to track status.',
     }
+  })
+}
+
+// Get full meeting detail with all sub-data
+export async function getFullMeeting(externalId: string) {
+  const context = await getAppContext()
+  const { townId } = context
+
+  if (!townId) {
+    const meeting = MEETINGS.find((m) => m.id === externalId)
+    if (!meeting) return null
+    return {
+      meeting,
+      agenda: AGENDA.map((item) => ({ ...item, id: `agenda-${item.n}`, meetingId: externalId, notes: '' })),
+      motions: MOTIONS,
+      actionItems: ACTION_ITEMS,
+      attendance: ATTENDANCE,
+    }
+  }
+
+  return withTownContext(townId, async (db) => {
+    const dbMeeting = await db.query.meetings.findFirst({
+      where: and(eq(meetings.townId, townId), eq(meetings.externalId, externalId)),
+    })
+    if (!dbMeeting) return null
+
+    const [agendaRows, motionRows, actionRows, attendanceRows] = await Promise.all([
+      db.query.agendaItems.findMany({
+        where: eq(agendaItems.meetingId, dbMeeting.id),
+        orderBy: [asc(agendaItems.sortOrder)],
+      }),
+      db.query.motions.findMany({
+        where: eq(motions.meetingId, dbMeeting.id),
+        orderBy: [asc(motions.sortOrder)],
+      }),
+      db.query.meetingActionItems.findMany({
+        where: eq(meetingActionItems.meetingId, dbMeeting.id),
+        orderBy: [asc(meetingActionItems.sortOrder)],
+      }),
+      db.query.meetingAttendance.findMany({
+        where: eq(meetingAttendance.meetingId, dbMeeting.id),
+        orderBy: [asc(meetingAttendance.sortOrder)],
+      }),
+    ])
+
+    return {
+      meeting: meetingToView(dbMeeting),
+      agenda: agendaRows.map((r) => ({ id: r.id, n: r.sortOrder + 1, title: r.title, detail: r.detail, notes: r.notes, meetingId: r.meetingId })),
+      motions: motionRows.map(motionToView),
+      actionItems: actionRows.map(meetingActionItemToView),
+      attendance: attendanceRows.map(meetingAttendanceToView),
+    }
+  })
+}
+
+// Agenda CRUD
+export async function addAgendaItem(meetingExternalId: string, input: { title: string; detail?: string }) {
+  const context = await getAppContext()
+  const { townId } = context
+  if (!townId) throw new Error('Database required')
+
+  return withTownContext(townId, async (db) => {
+    const meeting = await db.query.meetings.findFirst({
+      where: and(eq(meetings.townId, townId), eq(meetings.externalId, meetingExternalId)),
+    })
+    if (!meeting) throw new Error('Meeting not found')
+
+    const existing = await db.query.agendaItems.findMany({ where: eq(agendaItems.meetingId, meeting.id) })
+    const sortOrder = existing.length
+
+    const [item] = await db.insert(agendaItems).values({
+      meetingId: meeting.id,
+      title: input.title,
+      detail: input.detail ?? '',
+      notes: '',
+      sortOrder,
+    }).returning()
+    return item
+  })
+}
+
+export async function updateAgendaItem(itemId: string, input: { title?: string; detail?: string; notes?: string }) {
+  const context = await getAppContext()
+  const { townId } = context
+  if (!townId) throw new Error('Database required')
+
+  return withTownContext(townId, async (db) => {
+    const [updated] = await db.update(agendaItems)
+      .set({ ...input })
+      .where(eq(agendaItems.id, itemId))
+      .returning()
+    return updated
+  })
+}
+
+export async function removeAgendaItem(itemId: string) {
+  const context = await getAppContext()
+  const { townId } = context
+  if (!townId) throw new Error('Database required')
+
+  return withTownContext(townId, async (db) => {
+    await db.delete(agendaItems).where(eq(agendaItems.id, itemId))
+  })
+}
+
+// Motions CRUD
+export async function addMotion(meetingExternalId: string, input: {
+  agendaItemId?: string
+  description: string
+  movedBy?: string
+  secondedBy?: string
+  voteYes?: number
+  voteNo?: number
+  voteAbstain?: number
+  outcome?: string
+}): Promise<Motion> {
+  const context = await getAppContext()
+  const { townId } = context
+  if (!townId) throw new Error('Database required')
+
+  return withTownContext(townId, async (db) => {
+    const meeting = await db.query.meetings.findFirst({
+      where: and(eq(meetings.townId, townId), eq(meetings.externalId, meetingExternalId)),
+    })
+    if (!meeting) throw new Error('Meeting not found')
+
+    const existing = await db.query.motions.findMany({ where: eq(motions.meetingId, meeting.id) })
+    const [motion] = await db.insert(motions).values({
+      meetingId: meeting.id,
+      agendaItemId: input.agendaItemId ?? null,
+      description: input.description,
+      movedBy: input.movedBy ?? '',
+      secondedBy: input.secondedBy ?? '',
+      voteYes: input.voteYes ?? 0,
+      voteNo: input.voteNo ?? 0,
+      voteAbstain: input.voteAbstain ?? 0,
+      outcome: input.outcome ?? 'pending',
+      sortOrder: existing.length,
+    }).returning()
+    return motionToView(motion)
+  })
+}
+
+export async function updateMotion(motionId: string, input: {
+  description?: string
+  movedBy?: string
+  secondedBy?: string
+  voteYes?: number
+  voteNo?: number
+  voteAbstain?: number
+  outcome?: string
+  agendaItemId?: string | null
+}): Promise<Motion> {
+  const context = await getAppContext()
+  const { townId } = context
+  if (!townId) throw new Error('Database required')
+
+  return withTownContext(townId, async (db) => {
+    const [updated] = await db.update(motions)
+      .set({ ...input })
+      .where(eq(motions.id, motionId))
+      .returning()
+    return motionToView(updated)
+  })
+}
+
+export async function removeMotion(motionId: string) {
+  const context = await getAppContext()
+  const { townId } = context
+  if (!townId) throw new Error('Database required')
+  return withTownContext(townId, async (db) => {
+    await db.delete(motions).where(eq(motions.id, motionId))
+  })
+}
+
+// Action Items CRUD
+export async function addMeetingActionItem(meetingExternalId: string, input: {
+  title: string
+  assignedTo?: string
+  dueDate?: string
+}): Promise<MeetingActionItem> {
+  const context = await getAppContext()
+  const { townId } = context
+  if (!townId) throw new Error('Database required')
+
+  return withTownContext(townId, async (db) => {
+    const meeting = await db.query.meetings.findFirst({
+      where: and(eq(meetings.townId, townId), eq(meetings.externalId, meetingExternalId)),
+    })
+    if (!meeting) throw new Error('Meeting not found')
+
+    const existing = await db.query.meetingActionItems.findMany({ where: eq(meetingActionItems.meetingId, meeting.id) })
+    const [item] = await db.insert(meetingActionItems).values({
+      meetingId: meeting.id,
+      title: input.title,
+      assignedTo: input.assignedTo ?? '',
+      dueDate: input.dueDate,
+      done: false,
+      sortOrder: existing.length,
+    }).returning()
+    return meetingActionItemToView(item)
+  })
+}
+
+export async function updateMeetingActionItem(itemId: string, input: { title?: string; assignedTo?: string; dueDate?: string; done?: boolean }): Promise<MeetingActionItem> {
+  const context = await getAppContext()
+  const { townId } = context
+  if (!townId) throw new Error('Database required')
+  return withTownContext(townId, async (db) => {
+    const [updated] = await db.update(meetingActionItems)
+      .set({ ...input })
+      .where(eq(meetingActionItems.id, itemId))
+      .returning()
+    return meetingActionItemToView(updated)
+  })
+}
+
+export async function removeMeetingActionItem(itemId: string) {
+  const context = await getAppContext()
+  const { townId } = context
+  if (!townId) throw new Error('Database required')
+  return withTownContext(townId, async (db) => {
+    await db.delete(meetingActionItems).where(eq(meetingActionItems.id, itemId))
+  })
+}
+
+// Publish meeting
+export async function publishMeeting(externalId: string) {
+  const context = await getAppContext()
+  const { townId } = context
+  if (!townId) throw new Error('Database required')
+  return withTownContext(townId, async (db) => {
+    await db.update(meetings)
+      .set({ status: 'published', publishedAt: new Date() })
+      .where(and(eq(meetings.townId, townId), eq(meetings.externalId, externalId)))
+  })
+}
+
+// Attendance CRUD
+export async function addAttendee(meetingExternalId: string, input: {
+  name: string; role?: string; boardName?: string; isGuest?: boolean
+}): Promise<MeetingAttendance> {
+  const context = await getAppContext()
+  const { townId } = context
+  if (!townId) throw new Error('Database required')
+  return withTownContext(townId, async (db) => {
+    const meeting = await db.query.meetings.findFirst({
+      where: and(eq(meetings.townId, townId), eq(meetings.externalId, meetingExternalId)),
+    })
+    if (!meeting) throw new Error('Meeting not found')
+    const existing = await db.query.meetingAttendance.findMany({ where: eq(meetingAttendance.meetingId, meeting.id) })
+    const [row] = await db.insert(meetingAttendance).values({
+      meetingId: meeting.id,
+      name: input.name,
+      role: input.role ?? '',
+      boardName: input.boardName ?? '',
+      isGuest: input.isGuest ?? false,
+      status: 'present',
+      sortOrder: existing.length,
+    }).returning()
+    return meetingAttendanceToView(row)
+  })
+}
+
+export async function updateAttendee(attendeeId: string, input: {
+  status?: string; arrivedAt?: string; leftAt?: string; name?: string; role?: string
+}): Promise<MeetingAttendance> {
+  const context = await getAppContext()
+  const { townId } = context
+  if (!townId) throw new Error('Database required')
+  return withTownContext(townId, async (db) => {
+    const [row] = await db.update(meetingAttendance)
+      .set({ ...input })
+      .where(eq(meetingAttendance.id, attendeeId))
+      .returning()
+    return meetingAttendanceToView(row)
+  })
+}
+
+export async function removeAttendee(attendeeId: string) {
+  const context = await getAppContext()
+  const { townId } = context
+  if (!townId) throw new Error('Database required')
+  return withTownContext(townId, async (db) => {
+    await db.delete(meetingAttendance).where(eq(meetingAttendance.id, attendeeId))
+  })
+}
+
+// Update meeting metadata (presiding officer, called to order, adjourned at, notes, draft)
+export async function updateMeeting(externalId: string, input: {
+  presidingOfficer?: string
+  calledToOrderAt?: string
+  adjournedAt?: string
+  internalNotes?: string
+  minutesDraft?: string
+  minutesStatus?: string
+}) {
+  const context = await getAppContext()
+  const { townId } = context
+  if (!townId) throw new Error('Database required')
+  return withTownContext(townId, async (db) => {
+    await db.update(meetings)
+      .set({ ...input, updatedAt: new Date() })
+      .where(and(eq(meetings.townId, townId), eq(meetings.externalId, externalId)))
+  })
+}
+
+// Publish agenda (separate from publishing minutes)
+export async function publishAgenda(externalId: string) {
+  const context = await getAppContext()
+  const { townId } = context
+  if (!townId) throw new Error('Database required')
+  return withTownContext(townId, async (db) => {
+    await db.update(meetings)
+      .set({ agendaPublishedAt: new Date(), updatedAt: new Date() })
+      .where(and(eq(meetings.townId, townId), eq(meetings.externalId, externalId)))
+  })
+}
+
+// Approve and publish minutes
+export async function approveMinutes(externalId: string) {
+  const context = await getAppContext()
+  const { townId } = context
+  if (!townId) throw new Error('Database required')
+  return withTownContext(townId, async (db) => {
+    await db.update(meetings)
+      .set({ minutesStatus: 'approved', minutesPublishedAt: new Date(), status: 'published', publishedAt: new Date(), updatedAt: new Date() })
+      .where(and(eq(meetings.townId, townId), eq(meetings.externalId, externalId)))
   })
 }

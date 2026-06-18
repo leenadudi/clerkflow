@@ -2,12 +2,17 @@ import { relations } from 'drizzle-orm'
 import {
   agendaItems,
   boardTerms,
+  foiaAuditLog,
+  foiaDocuments,
   foiaMessages,
   foiaRequests,
   foiaWorkflowSteps,
   invitations,
   licenses,
+  meetingActionItems,
+  meetingAttendance,
   meetings,
+  motions,
   towns,
   users,
 } from './schema'
@@ -59,6 +64,22 @@ export const foiaRequestsRelations = relations(foiaRequests, ({ one, many }) => 
   }),
   messages: many(foiaMessages),
   workflowSteps: many(foiaWorkflowSteps),
+  documents: many(foiaDocuments),
+  auditLog: many(foiaAuditLog),
+}))
+
+export const foiaDocumentsRelations = relations(foiaDocuments, ({ one }) => ({
+  foiaRequest: one(foiaRequests, {
+    fields: [foiaDocuments.foiaRequestId],
+    references: [foiaRequests.id],
+  }),
+}))
+
+export const foiaAuditLogRelations = relations(foiaAuditLog, ({ one }) => ({
+  foiaRequest: one(foiaRequests, {
+    fields: [foiaAuditLog.foiaRequestId],
+    references: [foiaRequests.id],
+  }),
 }))
 
 export const foiaMessagesRelations = relations(foiaMessages, ({ one }) => ({
@@ -81,13 +102,30 @@ export const meetingsRelations = relations(meetings, ({ one, many }) => ({
     references: [towns.id],
   }),
   agendaItems: many(agendaItems),
+  motions: many(motions),
+  actionItems: many(meetingActionItems),
+  attendance: many(meetingAttendance),
 }))
 
-export const agendaItemsRelations = relations(agendaItems, ({ one }) => ({
+export const agendaItemsRelations = relations(agendaItems, ({ one, many }) => ({
   meeting: one(meetings, {
     fields: [agendaItems.meetingId],
     references: [meetings.id],
   }),
+  motions: many(motions),
+}))
+
+export const motionsRelations = relations(motions, ({ one }) => ({
+  meeting: one(meetings, { fields: [motions.meetingId], references: [meetings.id] }),
+  agendaItem: one(agendaItems, { fields: [motions.agendaItemId], references: [agendaItems.id] }),
+}))
+
+export const meetingActionItemsRelations = relations(meetingActionItems, ({ one }) => ({
+  meeting: one(meetings, { fields: [meetingActionItems.meetingId], references: [meetings.id] }),
+}))
+
+export const meetingAttendanceRelations = relations(meetingAttendance, ({ one }) => ({
+  meeting: one(meetings, { fields: [meetingAttendance.meetingId], references: [meetings.id] }),
 }))
 
 export const boardTermsRelations = relations(boardTerms, ({ one }) => ({

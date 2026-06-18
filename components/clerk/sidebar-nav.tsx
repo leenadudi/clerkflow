@@ -22,8 +22,8 @@ import { useWorkspace } from './workspace-context'
 const WORKSPACE = [
   { label: 'Home', href: '/app', icon: LayoutGrid },
   { label: 'Meetings', href: '/app/meetings', icon: Calendar },
-  { label: 'Records', href: '/app/foia', icon: Archive, badgeKey: 'foia' as const },
-  { label: 'Services', href: '/app/services', icon: ClipboardList },
+  { label: 'Records Requests', href: '/app/records', icon: Archive, badgeKey: 'foia' as const },
+  { label: 'Permits & Licenses', href: '/app/services', icon: ClipboardList },
   { label: 'Boards', href: '/app/boards', icon: Users },
   { label: 'Publish', href: '/app/publish', icon: Send },
 ]
@@ -36,14 +36,18 @@ const MANAGE = [
   { label: 'Settings', href: '/app/settings', icon: Settings },
 ]
 
+type BadgeVariant = 'danger' | 'warning'
+
 function NavLink({
   item,
   active,
   badge,
+  badgeVariant,
 }: {
   item: { label: string; href: string; icon: typeof LayoutGrid; badgeKey?: 'foia' }
   active: boolean
   badge?: number
+  badgeVariant?: BadgeVariant
 }) {
   const Icon = item.icon
   return (
@@ -60,7 +64,14 @@ function NavLink({
       <Icon className="size-[18px] shrink-0" aria-hidden />
       <span className="flex-1 truncate">{item.label}</span>
       {badge ? (
-        <span className="flex size-5 items-center justify-center rounded-full bg-destructive text-[11px] font-semibold text-destructive-foreground">
+        <span
+          className={cn(
+            'flex size-5 items-center justify-center rounded-full text-[11px] font-semibold',
+            badgeVariant === 'warning'
+              ? 'bg-[#d97706] text-white'
+              : 'bg-destructive text-destructive-foreground',
+          )}
+        >
           {badge}
         </span>
       ) : null}
@@ -70,9 +81,13 @@ function NavLink({
 
 export function SidebarNav() {
   const pathname = usePathname()
-  const { town, foiaAttentionCount } = useWorkspace()
+  const { town, foiaOverdueCount, foiaDueSoonCount } = useWorkspace()
   const isActive = (href: string) =>
     href === '/app' ? pathname === '/app' : pathname.startsWith(href)
+
+  // Badge: show overdue count in red, or due-soon count in amber if no overdue
+  const foiaBadge = foiaOverdueCount > 0 ? foiaOverdueCount : foiaDueSoonCount > 0 ? foiaDueSoonCount : 0
+  const foiaBadgeVariant: BadgeVariant = foiaOverdueCount > 0 ? 'danger' : 'warning'
 
   return (
     <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
@@ -98,7 +113,8 @@ export function SidebarNav() {
               key={item.href}
               item={item}
               active={isActive(item.href)}
-              badge={item.badgeKey === 'foia' ? foiaAttentionCount : undefined}
+              badge={item.badgeKey === 'foia' ? foiaBadge || undefined : undefined}
+              badgeVariant={item.badgeKey === 'foia' ? foiaBadgeVariant : undefined}
             />
           ))}
         </div>

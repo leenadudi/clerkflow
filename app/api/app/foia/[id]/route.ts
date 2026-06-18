@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import type { StatusKey } from '@/components/status-pill'
 import { requireStaffUser } from '@/lib/auth/app'
 import {
   addFoiaMessage,
@@ -42,10 +41,11 @@ export async function PATCH(
     const body = await request.json()
 
     if (body.status) {
-      const updated = await updateFoiaStatus(id, body.status as StatusKey)
-      if (!updated) {
+      const ok = await updateFoiaStatus(id, body.status as string)
+      if (!ok) {
         return NextResponse.json({ error: 'Not found' }, { status: 404 })
       }
+      const updated = await getFoiaRequest(id)
       return NextResponse.json({ request: updated })
     }
 

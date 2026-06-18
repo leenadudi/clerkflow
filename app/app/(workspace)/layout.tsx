@@ -30,12 +30,11 @@ export default async function WorkspaceLayout({
 
   const town = await getTownView()
   const foiaRequests = await listFoiaRequests()
-  const foiaAttentionCount = foiaRequests.filter(
-    (item) => item.status === 'new' || item.status === 'overdue',
-  ).length
+  const foiaOverdueCount = foiaRequests.filter((r) => r.status === 'overdue').length
+  const foiaDueSoonCount = foiaRequests.filter((r) => r.status === 'due-soon').length
 
   return (
-    <WorkspaceProvider town={town} foiaAttentionCount={foiaAttentionCount}>
+    <WorkspaceProvider town={town} foiaOverdueCount={foiaOverdueCount} foiaDueSoonCount={foiaDueSoonCount}>
       <div className="flex min-h-screen bg-background">
         <aside className="fixed inset-y-0 left-0 hidden w-64 md:block">
           <SidebarNav />

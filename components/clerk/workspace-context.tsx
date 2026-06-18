@@ -7,18 +7,22 @@ export type WorkspaceTown = typeof TOWN
 
 type WorkspaceContextValue = {
   town: WorkspaceTown
-  foiaAttentionCount: number
+  /** Number of requests with computed status === 'overdue' */
+  foiaOverdueCount: number
+  /** Number of requests with computed status === 'due-soon' (and no overdue) */
+  foiaDueSoonCount: number
 }
 
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null)
 
 export function WorkspaceProvider({
   town,
-  foiaAttentionCount,
+  foiaOverdueCount,
+  foiaDueSoonCount,
   children,
 }: WorkspaceContextValue & { children: React.ReactNode }) {
   return (
-    <WorkspaceContext.Provider value={{ town, foiaAttentionCount }}>
+    <WorkspaceContext.Provider value={{ town, foiaOverdueCount, foiaDueSoonCount }}>
       {children}
     </WorkspaceContext.Provider>
   )

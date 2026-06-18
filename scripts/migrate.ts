@@ -99,6 +99,72 @@ async function main() {
       UNIQUE (town_id, public_id)
     )`)
 
+  await run(sql, 'agenda_items: add notes column',
+    `ALTER TABLE agenda_items ADD COLUMN IF NOT EXISTS notes text NOT NULL DEFAULT ''`)
+
+  await run(sql, 'meetings: add minutes_status column',
+    `ALTER TABLE meetings ADD COLUMN IF NOT EXISTS minutes_status text NOT NULL DEFAULT 'not_started'`)
+
+  await run(sql, 'motions: create table',
+    `CREATE TABLE IF NOT EXISTS motions (
+      id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      meeting_id      uuid NOT NULL REFERENCES meetings(id) ON DELETE CASCADE,
+      agenda_item_id  uuid REFERENCES agenda_items(id) ON DELETE SET NULL,
+      description     text NOT NULL,
+      moved_by        text NOT NULL DEFAULT '',
+      seconded_by     text NOT NULL DEFAULT '',
+      vote_yes        integer NOT NULL DEFAULT 0,
+      vote_no         integer NOT NULL DEFAULT 0,
+      vote_abstain    integer NOT NULL DEFAULT 0,
+      outcome         text NOT NULL DEFAULT 'pending',
+      sort_order      integer NOT NULL DEFAULT 0,
+      created_at      timestamptz NOT NULL DEFAULT now()
+    )`)
+
+  await run(sql, 'meeting_action_items: create table',
+    `CREATE TABLE IF NOT EXISTS meeting_action_items (
+      id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      meeting_id  uuid NOT NULL REFERENCES meetings(id) ON DELETE CASCADE,
+      title       text NOT NULL,
+      assigned_to text NOT NULL DEFAULT '',
+      due_date    text,
+      done        boolean NOT NULL DEFAULT false,
+      sort_order  integer NOT NULL DEFAULT 0,
+      created_at  timestamptz NOT NULL DEFAULT now()
+    )`)
+
+  await run(sql, 'towns: add resident_hub_enabled column',
+    `ALTER TABLE towns ADD COLUMN IF NOT EXISTS resident_hub_enabled boolean NOT NULL DEFAULT true`)
+
+  await run(sql, 'towns: add state column',
+    `ALTER TABLE towns ADD COLUMN IF NOT EXISTS state text NOT NULL DEFAULT ''`)
+
+  await run(sql, 'meetings: add new columns',
+    `ALTER TABLE meetings
+      ADD COLUMN IF NOT EXISTS meeting_type text NOT NULL DEFAULT 'council',
+      ADD COLUMN IF NOT EXISTS agenda_published_at timestamptz,
+      ADD COLUMN IF NOT EXISTS minutes_published_at timestamptz,
+      ADD COLUMN IF NOT EXISTS internal_notes text NOT NULL DEFAULT '',
+      ADD COLUMN IF NOT EXISTS minutes_draft text NOT NULL DEFAULT '',
+      ADD COLUMN IF NOT EXISTS presiding_officer text NOT NULL DEFAULT '',
+      ADD COLUMN IF NOT EXISTS called_to_order_at text NOT NULL DEFAULT '',
+      ADD COLUMN IF NOT EXISTS adjourned_at text NOT NULL DEFAULT ''`)
+
+  await run(sql, 'meeting_attendance: create table',
+    `CREATE TABLE IF NOT EXISTS meeting_attendance (
+      id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      meeting_id   uuid NOT NULL REFERENCES meetings(id) ON DELETE CASCADE,
+      name         text NOT NULL,
+      role         text NOT NULL DEFAULT '',
+      board_name   text NOT NULL DEFAULT '',
+      status       text NOT NULL DEFAULT 'present',
+      arrived_at   text,
+      left_at      text,
+      is_guest     boolean NOT NULL DEFAULT false,
+      sort_order   integer NOT NULL DEFAULT 0,
+      created_at   timestamptz NOT NULL DEFAULT now()
+    )`)
+
   console.log('\nMigration complete.')
 }
 

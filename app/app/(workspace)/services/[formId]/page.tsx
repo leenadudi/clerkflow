@@ -19,7 +19,7 @@ export default async function LicenseDetailPage({
       <PageHeader
         title={license.typeLabel}
         breadcrumbs={[
-          { label: 'Services', href: '/app/services' },
+          { label: 'Permits & Licenses', href: '/app/services' },
           { label: license.id },
         ]}
       />

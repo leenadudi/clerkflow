@@ -27,6 +27,8 @@ export async function POST(request: NextRequest) {
       startsAt: new Date(body.startsAt),
       location: body.location,
       status: body.status,
+      meetingType: body.meetingType,
+      internalNotes: body.internalNotes,
     })
 
     return NextResponse.json({ meeting }, { status: 201 })
