@@ -27,7 +27,7 @@ const SECTIONS = [
   },
   {
     title: 'Subscription and billing',
-    body: 'Paid subscriptions are billed monthly or annually as agreed in your quote letter. Fees are non-refundable except as required by law. We may change pricing for renewals with 30 days\' notice. Failure to pay may result in suspension of access.',
+    body: 'We reserve the right to introduce pricing in the future with at least 30 days\' notice to existing users before any change takes effect.',
   },
   {
     title: 'Availability',

@@ -4,7 +4,6 @@ import {
   Building2,
   Clock,
   FileSpreadsheet,
-  ShieldCheck,
   Users,
 } from 'lucide-react'
 import { CtaBanner } from '@/components/marketing/cta-banner'
@@ -41,7 +40,7 @@ const NOT_FOR_YOU = [
   },
   {
     label: 'Spreadsheets forever',
-    why: 'Free until a missed deadline becomes a front-page story — or until the retiring clerk takes institutional knowledge with them.',
+    why: 'Works until a missed deadline becomes a front-page story — or until the retiring clerk takes institutional knowledge with them.',
   },
 ]
 
@@ -119,41 +118,6 @@ export default function ForSmallTownsPage() {
               </CardContent>
             </Card>
           ))}
-        </div>
-      </section>
-
-      <section className="mt-16">
-        <div className="rounded-2xl border border-border bg-primary p-8 text-primary-foreground md:p-10">
-          <h2 className="text-2xl font-semibold tracking-tight">
-            Built for your budget and your council
-          </h2>
-          <p className="mt-3 max-w-2xl text-primary-foreground/85">
-            At $99–149/month, Clerkflow costs less than a part-time temp and
-            stays under most informal procurement thresholds. No RFP. No
-            six-month evaluation committee. Just a tool that works.
-          </p>
-          <ul className="mt-6 flex flex-col gap-2 text-sm">
-            {[
-              'Approved by councils in small towns across the country',
-              'Quote letter ready for your next meeting packet',
-              'Annual billing aligned to your fiscal year',
-            ].map((item) => (
-              <li key={item} className="flex items-center gap-2">
-                <ShieldCheck className="size-4 shrink-0" />
-                {item}
-              </li>
-            ))}
-          </ul>
-          <Button
-            size="lg"
-            variant="outline"
-            className="mt-8 border-primary-foreground/30 bg-transparent text-primary-foreground hover:bg-primary-foreground/10"
-            render={
-              <Link href="/pricing">
-                See pricing <ArrowRight className="size-4" />
-              </Link>
-            }
-          />
         </div>
       </section>
 

@@ -8,7 +8,6 @@ import {
   Calendar,
   FileText,
   Users,
-  Check,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -60,6 +59,7 @@ export default async function HomePage() {
             <div className="mt-7">
               <Button
                 size="lg"
+                nativeButton={false}
                 render={
                   <Link href="/contact">
                     Request a demo <ArrowRight className="size-4" />
@@ -136,49 +136,6 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* Pricing teaser */}
-        <section className="mx-auto max-w-6xl px-4 py-16 md:px-6">
-          <Card className="overflow-hidden">
-            <CardContent className="flex flex-col items-start gap-6 p-8 md:flex-row md:items-center md:justify-between">
-              <div>
-                <h2 className="text-2xl font-semibold tracking-tight text-foreground">
-                  Simple pricing for small budgets
-                </h2>
-                <p className="mt-2 text-muted-foreground">
-                  $99–149 per month, per town. Under most procurement thresholds —
-                  no RFP required.
-                </p>
-                <ul className="mt-4 flex flex-col gap-2 text-sm text-foreground">
-                  {[
-                    'Unlimited staff users',
-                    'Public resident hub included',
-                    'Email & phone support',
-                  ].map((f) => (
-                    <li key={f} className="flex items-center gap-2">
-                      <Check className="size-4 text-success" /> {f}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div className="flex shrink-0 flex-col gap-3">
-                <Button
-                  size="lg"
-                  render={
-                    <Link href="/contact">
-                      Request a demo <ArrowRight className="size-4" />
-                    </Link>
-                  }
-                />
-                <Link
-                  href="/pricing"
-                  className="text-center text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-                >
-                  See full pricing
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
-        </section>
       </main>
 
       <MarketingFooter />

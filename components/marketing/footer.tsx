@@ -27,7 +27,6 @@ export function MarketingFooter() {
               links={[
                 { label: 'Overview', href: '/product' },
                 { label: 'For Small Towns', href: '/for-small-towns' },
-                { label: 'Pricing', href: '/pricing' },
               ]}
             />
             <FooterCol

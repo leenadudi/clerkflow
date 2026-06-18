@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import {
   LayoutGrid,
   Calendar,
-  FileText,
+  Archive,
   ClipboardList,
   Users,
   UserSquare2,
@@ -22,14 +22,14 @@ import { useWorkspace } from './workspace-context'
 const WORKSPACE = [
   { label: 'Home', href: '/app', icon: LayoutGrid },
   { label: 'Meetings', href: '/app/meetings', icon: Calendar },
-  { label: 'FOIA', href: '/app/foia', icon: FileText, badgeKey: 'foia' as const },
+  { label: 'Records', href: '/app/foia', icon: Archive, badgeKey: 'foia' as const },
   { label: 'Services', href: '/app/services', icon: ClipboardList },
   { label: 'Boards', href: '/app/boards', icon: Users },
-  { label: 'Residents', href: '/app/residents', icon: UserSquare2 },
   { label: 'Publish', href: '/app/publish', icon: Send },
 ]
 
 const MANAGE = [
+  { label: 'Residents', href: '/app/residents', icon: UserSquare2 },
   { label: 'Import', href: '/app/import', icon: Upload },
   { label: 'Reports', href: '/app/reports', icon: BarChart3 },
   { label: 'Compliance', href: '/app/compliance', icon: ShieldCheck },

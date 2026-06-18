@@ -78,6 +78,27 @@ async function main() {
       created_at    timestamptz NOT NULL DEFAULT now()
     )`)
 
+  // ── licenses table ────────────────────────────────────────────────────────
+  await run(sql, 'licenses: create table',
+    `CREATE TABLE IF NOT EXISTS licenses (
+      id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      town_id         uuid NOT NULL REFERENCES towns(id) ON DELETE CASCADE,
+      public_id       text NOT NULL,
+      type            text NOT NULL,
+      applicant_name  text NOT NULL,
+      applicant_email text,
+      applicant_phone text,
+      description     text NOT NULL DEFAULT '',
+      status          text NOT NULL DEFAULT 'pending',
+      fee             integer,
+      fee_paid_at     timestamptz,
+      submitted_at    timestamptz NOT NULL,
+      expires_at      timestamptz,
+      created_at      timestamptz NOT NULL DEFAULT now(),
+      updated_at      timestamptz NOT NULL DEFAULT now(),
+      UNIQUE (town_id, public_id)
+    )`)
+
   console.log('\nMigration complete.')
 }
 

@@ -52,6 +52,7 @@ export default async function CommandCenterPage() {
           <>
             <Button
               variant="outline"
+              nativeButton={false}
               render={
                 <Link href="/app/meetings">
                   <Plus className="size-4" /> New meeting
@@ -59,6 +60,7 @@ export default async function CommandCenterPage() {
               }
             />
             <Button
+              nativeButton={false}
               render={
                 <Link href="/app/foia">
                   <Plus className="size-4" /> New FOIA
@@ -105,6 +107,7 @@ export default async function CommandCenterPage() {
             <Button
               variant="ghost"
               size="sm"
+              nativeButton={false}
               render={
                 <Link href="/app/foia">
                   View all FOIA <ArrowRight className="size-4" />
@@ -203,6 +206,7 @@ export default async function CommandCenterPage() {
           </div>
           <Button
             variant="outline"
+            nativeButton={false}
             render={
               <Link href={`/${town.slug}`}>
                 <Send className="size-4" /> View public hub

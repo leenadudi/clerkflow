@@ -10,6 +10,10 @@ export type StatusKey =
   | 'draft'
   | 'scheduled'
   | 'cancelled'
+  | 'pending'
+  | 'approved'
+  | 'denied'
+  | 'expired'
 
 const STATUS_STYLES: Record<
   StatusKey,
@@ -59,6 +63,26 @@ const STATUS_STYLES: Record<
     label: 'Cancelled',
     className: 'bg-destructive/10 text-destructive',
     dot: 'bg-destructive',
+  },
+  pending: {
+    label: 'Pending',
+    className: 'bg-warning/15 text-warning-foreground',
+    dot: 'bg-warning',
+  },
+  approved: {
+    label: 'Approved',
+    className: 'bg-success/15 text-success',
+    dot: 'bg-success',
+  },
+  denied: {
+    label: 'Denied',
+    className: 'bg-destructive/10 text-destructive',
+    dot: 'bg-destructive',
+  },
+  expired: {
+    label: 'Expired',
+    className: 'bg-muted text-muted-foreground',
+    dot: 'bg-muted-foreground',
   },
 }
 

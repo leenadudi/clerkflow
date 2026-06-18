@@ -4,10 +4,12 @@ import {
   AGENDA,
   BOARD_TERMS,
   FOIA_REQUESTS,
+  LICENSES,
   MEETINGS,
   type AgendaItem,
   type BoardTerm,
   type FoiaRequest,
+  type License,
   type Meeting,
 } from '@/lib/data'
 import { getDb, isDatabaseConfigured, withTownContext } from '@/lib/db'
@@ -16,6 +18,7 @@ import {
   boardTermToView,
   foiaMessageToView,
   foiaToView,
+  licenseToView,
   meetingToView,
   workflowStepToView,
   type FoiaThreadMessage,
@@ -27,6 +30,7 @@ import {
   foiaMessages,
   foiaRequests,
   foiaWorkflowSteps,
+  licenses,
   meetings,
   towns,
 } from '@/lib/db/schema'
@@ -401,6 +405,196 @@ export async function createMeeting(input: CreateMeetingInput) {
       .returning()
 
     return meetingToView(created)
+  })
+}
+
+export type CreateBoardTermInput = {
+  memberName: string
+  boardName: string
+  seat: string
+  expiresAt: Date
+}
+
+export async function createBoardTerm(input: CreateBoardTermInput): Promise<BoardTerm> {
+  const context = await getAppContext()
+  if (!context.townId) throw new Error('Database is not configured')
+
+  return withTownContext(context.townId, async (db) => {
+    const [created] = await db
+      .insert(boardTerms)
+      .values({
+        townId: context.townId!,
+        memberName: input.memberName,
+        boardName: input.boardName,
+        seat: input.seat,
+        expiresAt: input.expiresAt,
+      })
+      .returning()
+    return boardTermToView(created)
+  })
+}
+
+export async function removeBoardTerm(id: string): Promise<void> {
+  const context = await getAppContext()
+  if (!context.townId) throw new Error('Database is not configured')
+
+  await withTownContext(context.townId, async (db) => {
+    await db
+      .delete(boardTerms)
+      .where(and(eq(boardTerms.id, id), eq(boardTerms.townId, context.townId!)))
+  })
+}
+
+export async function listPublishedMeetings(): Promise<Meeting[]> {
+  const context = await getAppContext()
+  const { townId } = context
+  if (!townId) return MEETINGS.filter((m) => m.status === 'published')
+
+  return withTownContext(townId, async (db) => {
+    const rows = await db.query.meetings.findMany({
+      where: and(eq(meetings.townId, townId), eq(meetings.status, 'published')),
+      orderBy: [desc(meetings.startsAt)],
+    })
+    return rows.map(meetingToView)
+  })
+}
+
+export async function listLicenses(): Promise<License[]> {
+  const context = await getAppContext()
+  const { townId } = context
+  if (!townId) return LICENSES
+
+  return withTownContext(townId, async (db) => {
+    const rows = await db.query.licenses.findMany({
+      where: eq(licenses.townId, townId),
+      orderBy: [desc(licenses.submittedAt)],
+    })
+    return rows.map(licenseToView)
+  })
+}
+
+export async function getLicense(publicId: string): Promise<License | null> {
+  const context = await getAppContext()
+  const { townId } = context
+  if (!townId) return LICENSES.find((l) => l.id === publicId) ?? null
+
+  return withTownContext(townId, async (db) => {
+    const row = await db.query.licenses.findFirst({
+      where: and(eq(licenses.townId, townId), eq(licenses.publicId, publicId)),
+    })
+    return row ? licenseToView(row) : null
+  })
+}
+
+export type CreateLicenseInput = {
+  type: string
+  applicantName: string
+  applicantEmail?: string
+  applicantPhone?: string
+  description?: string
+  fee?: number
+}
+
+export async function createLicense(input: CreateLicenseInput): Promise<License> {
+  const context = await getAppContext()
+  if (!context.townId) throw new Error('Database is not configured')
+
+  return withTownContext(context.townId, async (db) => {
+    const latest = await db.query.licenses.findMany({
+      where: eq(licenses.townId, context.townId!),
+      orderBy: [desc(licenses.createdAt)],
+      limit: 1,
+    })
+    const nextNumber = latest[0]?.publicId
+      ? Number.parseInt(latest[0].publicId.replace('LIC-', ''), 10) + 1
+      : 1
+
+    const [created] = await db
+      .insert(licenses)
+      .values({
+        townId: context.townId!,
+        publicId: `LIC-${String(nextNumber).padStart(3, '0')}`,
+        type: input.type,
+        applicantName: input.applicantName,
+        applicantEmail: input.applicantEmail,
+        applicantPhone: input.applicantPhone,
+        description: input.description ?? '',
+        status: 'pending',
+        fee: input.fee,
+        submittedAt: new Date(),
+      })
+      .returning()
+    return licenseToView(created)
+  })
+}
+
+export async function updateLicenseStatus(
+  publicId: string,
+  status: 'pending' | 'approved' | 'denied' | 'expired',
+): Promise<License | null> {
+  const context = await getAppContext()
+  if (!context.townId) throw new Error('Database is not configured')
+
+  return withTownContext(context.townId, async (db) => {
+    const [updated] = await db
+      .update(licenses)
+      .set({ status, updatedAt: new Date() })
+      .where(and(eq(licenses.townId, context.townId!), eq(licenses.publicId, publicId)))
+      .returning()
+    return updated ? licenseToView(updated) : null
+  })
+}
+
+export async function submitPublicLicense(
+  townSlug: string,
+  input: {
+    type: string
+    applicantName: string
+    applicantEmail?: string
+    applicantPhone?: string
+    description?: string
+  },
+) {
+  if (!isDatabaseConfigured()) {
+    return {
+      publicId: 'LIC-005',
+      message: 'Application received (demo mode — connect DATABASE_URL to persist).',
+    }
+  }
+
+  const db = getDb()
+  const town = await db.query.towns.findFirst({ where: eq(towns.slug, townSlug) })
+  if (!town) throw new Error('Town not found')
+
+  return withTownContext(town.id, async (db) => {
+    const latest = await db.query.licenses.findMany({
+      where: eq(licenses.townId, town.id),
+      orderBy: [desc(licenses.createdAt)],
+      limit: 1,
+    })
+    const nextNumber = latest[0]?.publicId
+      ? Number.parseInt(latest[0].publicId.replace('LIC-', ''), 10) + 1
+      : 1
+
+    const [created] = await db
+      .insert(licenses)
+      .values({
+        townId: town.id,
+        publicId: `LIC-${String(nextNumber).padStart(3, '0')}`,
+        type: input.type,
+        applicantName: input.applicantName,
+        applicantEmail: input.applicantEmail,
+        applicantPhone: input.applicantPhone,
+        description: input.description ?? '',
+        status: 'pending',
+        submittedAt: new Date(),
+      })
+      .returning()
+
+    return {
+      publicId: created.publicId,
+      message: 'Your application has been submitted. Save your confirmation number.',
+    }
   })
 }
 

@@ -118,11 +118,37 @@ export function boardTermToView(row: BoardTermRow, now = new Date()): BoardTerm 
   const daysUntilExpiry = Math.ceil(msUntilExpiry / (1000 * 60 * 60 * 24))
 
   return {
+    id: row.id,
     member: row.memberName,
     board: row.boardName,
     seat: row.seat,
     expires: formatDate(row.expiresAt),
     expiringSoon: daysUntilExpiry <= 60,
+  }
+}
+
+export function licenseToView(row: import('./schema').LicenseRow): import('@/lib/data').License {
+  const LICENSE_TYPE_LABELS: Record<string, string> = {
+    business_license: 'Business license',
+    burn_permit: 'Burn permit',
+    garage_sale: 'Garage sale permit',
+    alcohol: 'Alcohol license',
+    event_permit: 'Event permit',
+    vendor_permit: 'Vendor permit',
+  }
+  return {
+    id: row.publicId,
+    type: row.type,
+    typeLabel: LICENSE_TYPE_LABELS[row.type] ?? row.type,
+    applicantName: row.applicantName,
+    applicantEmail: row.applicantEmail ?? undefined,
+    applicantPhone: row.applicantPhone ?? undefined,
+    description: row.description,
+    status: row.status as import('@/lib/data').License['status'],
+    submittedAt: formatDate(row.submittedAt),
+    expiresAt: row.expiresAt ? formatDate(row.expiresAt) : undefined,
+    fee: row.fee != null ? `$${(row.fee / 100).toFixed(2)}` : undefined,
+    feePaid: row.feePaidAt != null,
   }
 }
 

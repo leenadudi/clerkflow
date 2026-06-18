@@ -144,6 +144,30 @@ export const boardTerms = pgTable('board_terms', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 })
 
+export const licenses = pgTable(
+  'licenses',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    townId: uuid('town_id')
+      .references(() => towns.id, { onDelete: 'cascade' })
+      .notNull(),
+    publicId: text('public_id').notNull(),
+    type: text('type').notNull(),
+    applicantName: text('applicant_name').notNull(),
+    applicantEmail: text('applicant_email'),
+    applicantPhone: text('applicant_phone'),
+    description: text('description').notNull().default(''),
+    status: text('status').notNull().default('pending'),
+    fee: integer('fee'),
+    feePaidAt: timestamp('fee_paid_at', { withTimezone: true }),
+    submittedAt: timestamp('submitted_at', { withTimezone: true }).notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [uniqueIndex('licenses_town_public_id').on(table.townId, table.publicId)],
+)
+
 export const prospects = pgTable('prospects', {
   id: text('id').primaryKey(),
   townName: text('town_name').notNull(),
@@ -168,4 +192,5 @@ export type FoiaWorkflowStepRow = typeof foiaWorkflowSteps.$inferSelect
 export type MeetingRow = typeof meetings.$inferSelect
 export type AgendaItemRow = typeof agendaItems.$inferSelect
 export type BoardTermRow = typeof boardTerms.$inferSelect
+export type LicenseRow = typeof licenses.$inferSelect
 export type ProspectRow = typeof prospects.$inferSelect

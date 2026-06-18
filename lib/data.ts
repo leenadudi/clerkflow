@@ -160,6 +160,7 @@ export const AGENDA: AgendaItem[] = [
 ]
 
 export type BoardTerm = {
+  id: string
   member: string
   board: string
   seat: string
@@ -169,6 +170,7 @@ export type BoardTerm = {
 
 export const BOARD_TERMS: BoardTerm[] = [
   {
+    id: 'demo-1',
     member: 'Eleanor Pratt',
     board: 'Planning Commission',
     seat: 'Seat 2',
@@ -176,6 +178,7 @@ export const BOARD_TERMS: BoardTerm[] = [
     expiringSoon: true,
   },
   {
+    id: 'demo-2',
     member: 'Gregory Nunn',
     board: 'Board of Zoning Appeals',
     seat: 'Seat 4',
@@ -183,10 +186,92 @@ export const BOARD_TERMS: BoardTerm[] = [
     expiringSoon: true,
   },
   {
+    id: 'demo-3',
     member: 'Priya Anand',
     board: 'Parks & Recreation Board',
     seat: 'Chair',
     expires: 'Dec 31, 2026',
     expiringSoon: false,
+  },
+]
+
+export const LICENSE_TYPES = [
+  { value: 'business_license', label: 'Business license' },
+  { value: 'burn_permit', label: 'Burn permit' },
+  { value: 'garage_sale', label: 'Garage sale permit' },
+  { value: 'alcohol', label: 'Alcohol license' },
+  { value: 'event_permit', label: 'Event permit' },
+  { value: 'vendor_permit', label: 'Vendor permit' },
+] as const
+
+export type LicenseType = (typeof LICENSE_TYPES)[number]['value']
+
+export type License = {
+  id: string
+  type: LicenseType | string
+  typeLabel: string
+  applicantName: string
+  applicantEmail?: string
+  applicantPhone?: string
+  description: string
+  status: StatusKey
+  submittedAt: string
+  expiresAt?: string
+  fee?: string
+  feePaid: boolean
+}
+
+export const LICENSES: License[] = [
+  {
+    id: 'LIC-001',
+    type: 'business_license',
+    typeLabel: 'Business license',
+    applicantName: 'Maria Santos',
+    applicantEmail: 'maria@sunsetbakery.com',
+    applicantPhone: '(740) 555-0183',
+    description: 'Retail bakery at 142 Main St.',
+    status: 'pending',
+    submittedAt: 'Jun 10, 2026',
+    expiresAt: 'Jun 10, 2027',
+    fee: '$75.00',
+    feePaid: false,
+  },
+  {
+    id: 'LIC-002',
+    type: 'burn_permit',
+    typeLabel: 'Burn permit',
+    applicantName: 'Dale Hooper',
+    applicantEmail: 'dhooper@email.com',
+    description: 'Brush and yard debris burn at 88 Oak Lane.',
+    status: 'approved',
+    submittedAt: 'Jun 8, 2026',
+    expiresAt: 'Jun 15, 2026',
+    fee: '$10.00',
+    feePaid: true,
+  },
+  {
+    id: 'LIC-003',
+    type: 'garage_sale',
+    typeLabel: 'Garage sale permit',
+    applicantName: 'Linda Tran',
+    description: '2-day garage sale at 19 Birch Ave, Jun 21–22.',
+    status: 'approved',
+    submittedAt: 'Jun 14, 2026',
+    expiresAt: 'Jun 22, 2026',
+    fee: '$5.00',
+    feePaid: true,
+  },
+  {
+    id: 'LIC-004',
+    type: 'alcohol',
+    typeLabel: 'Alcohol license',
+    applicantName: 'Riverside Tap LLC',
+    applicantEmail: 'owner@riversidetap.com',
+    applicantPhone: '(740) 555-0241',
+    description: 'Beer and wine service for restaurant at 301 River Rd.',
+    status: 'pending',
+    submittedAt: 'Jun 12, 2026',
+    fee: '$250.00',
+    feePaid: false,
   },
 ]

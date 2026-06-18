@@ -72,6 +72,7 @@ export default function ProductPage() {
         <div className="mt-7">
           <Button
             size="lg"
+            nativeButton={false}
             render={
               <Link href="/contact">
                 Request a demo <ArrowRight className="size-4" />

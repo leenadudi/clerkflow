@@ -6,6 +6,7 @@ import {
   foiaRequests,
   foiaWorkflowSteps,
   invitations,
+  licenses,
   meetings,
   towns,
   users,
@@ -16,7 +17,15 @@ export const townsRelations = relations(towns, ({ many }) => ({
   foiaRequests: many(foiaRequests),
   meetings: many(meetings),
   boardTerms: many(boardTerms),
+  licenses: many(licenses),
   invitations: many(invitations),
+}))
+
+export const licensesRelations = relations(licenses, ({ one }) => ({
+  town: one(towns, {
+    fields: [licenses.townId],
+    references: [towns.id],
+  }),
 }))
 
 export const usersRelations = relations(users, ({ one, many }) => ({

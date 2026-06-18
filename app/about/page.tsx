@@ -95,6 +95,7 @@ export default function AboutPage() {
           clerks.
         </p>
         <Button
+          nativeButton={false}
           render={
             <Link href="/contact">
               Get in touch <ArrowRight className="size-4" />
