@@ -15,7 +15,7 @@ export default function ContactPage() {
     <MarketingPageLayout className="max-w-5xl">
       <div className="max-w-2xl">
         <h1 className="text-balance text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
-          Request a demo
+          Schedule a walkthrough
         </h1>
         <p className="mt-5 text-pretty text-lg leading-relaxed text-muted-foreground">
           See how Clerkflow works for towns like yours. We&apos;ll walk through
@@ -119,7 +119,7 @@ export default function ContactPage() {
                 </div>
 
                 <Button type="submit" size="lg" className="w-fit">
-                  Request demo
+                  Schedule a walkthrough
                 </Button>
 
                 <p className="text-xs text-muted-foreground">

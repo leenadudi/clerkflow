@@ -6,29 +6,48 @@ import {
   ShieldCheck,
   ArrowRight,
   Calendar,
+  ClipboardList,
   FileText,
+  LayoutGrid,
+  Send,
   Users,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { MarketingHeader } from '@/components/marketing/header'
 import { MarketingFooter } from '@/components/marketing/footer'
+import { CtaBanner } from '@/components/marketing/cta-banner'
 
-const PILLARS = [
+const MODULES = [
+  {
+    icon: LayoutGrid,
+    title: 'Command center',
+    body: 'Start every day with a clear picture of overdue records requests, upcoming meetings, expiring board terms, and renewals — all in one view.',
+  },
   {
     icon: Calendar,
     title: 'Meetings',
-    body: 'Build agendas, capture minutes, track action items, and publish to residents in a few clicks.',
+    body: 'Build agendas, capture minutes, assign action items, and publish to your resident hub when ready. No more Word docs in shared drives.',
   },
   {
     icon: FileText,
     title: 'Public records',
-    body: 'Log FOIA requests, track statutory deadlines, and never miss a response window again.',
+    body: 'Log requests, track statutory deadlines, manage correspondence, and walk through a release workflow so nothing slips through the cracks.',
+  },
+  {
+    icon: ClipboardList,
+    title: 'Permits & licenses',
+    body: 'Dog licenses, vendor permits, event applications — build forms once and route submissions to the right staff.',
   },
   {
     icon: Users,
+    title: 'Boards & commissions',
+    body: 'Track members, seats, and term expirations. See which appointments need council action before a seat goes vacant.',
+  },
+  {
+    icon: Send,
     title: 'Resident hub',
-    body: 'A simple public site where residents find meetings, apply for licenses, and track requests.',
+    body: 'A public-facing site where residents view meetings, submit records requests, apply for permits, and track status — no login required.',
   },
 ]
 
@@ -56,16 +75,22 @@ export default async function HomePage() {
               with one calm workspace for meetings, public records, forms, and a
               public hub your residents will actually use.
             </p>
-            <div className="mt-7">
+            <div className="mt-7 flex flex-wrap items-center gap-3">
               <Button
                 size="lg"
                 nativeButton={false}
                 render={
                   <Link href="/contact">
-                    Request a demo <ArrowRight className="size-4" />
+                    Schedule a walkthrough <ArrowRight className="size-4" />
                   </Link>
                 }
               />
+              <a
+                href="/demo/launch"
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+              >
+                Try the demo
+              </a>
             </div>
           </div>
 
@@ -81,39 +106,28 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* Problem */}
-        <section className="border-y border-border bg-card">
-          <div className="mx-auto max-w-6xl px-4 py-14 md:px-6">
-            <div className="max-w-2xl">
-              <h2 className="text-balance text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-                Small towns run on spreadsheets and sticky notes.
-              </h2>
-              <p className="mt-3 text-pretty text-muted-foreground">
-                The clerk often wears five hats, and a retirement wave means
-                institutional knowledge walks out the door. Clerkflow keeps the
-                whole town&apos;s work in one calm, organized place — so a missed
-                deadline never becomes a legal problem.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* Pillars */}
-        <section className="mx-auto max-w-6xl px-4 py-16 md:px-6">
-          <div className="grid gap-6 md:grid-cols-3">
-            {PILLARS.map((p) => {
-              const Icon = p.icon
+        {/* Modules */}
+        <section className="mx-auto max-w-6xl px-4 pb-16 md:px-6">
+          <h2 className="text-2xl font-semibold tracking-tight text-foreground">
+            Everything the clerk office runs on
+          </h2>
+          <p className="mt-2 text-muted-foreground">
+            Built around how small-town clerks actually work.
+          </p>
+          <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+            {MODULES.map((mod) => {
+              const Icon = mod.icon
               return (
-                <Card key={p.title}>
+                <Card key={mod.title}>
                   <CardContent className="p-6">
                     <span className="flex size-11 items-center justify-center rounded-lg bg-primary/10 text-primary">
                       <Icon className="size-5" />
                     </span>
-                    <h3 className="mt-4 text-lg font-semibold text-foreground">
-                      {p.title}
+                    <h3 className="mt-4 text-base font-semibold text-foreground">
+                      {mod.title}
                     </h3>
-                    <p className="mt-2 text-base leading-relaxed text-muted-foreground">
-                      {p.body}
+                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                      {mod.body}
                     </p>
                   </CardContent>
                 </Card>
@@ -122,20 +136,42 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* Social proof placeholder */}
-        <section className="border-y border-border bg-secondary/50">
-          <div className="mx-auto max-w-3xl px-4 py-14 text-center md:px-6">
-            <p className="text-balance text-xl font-medium leading-relaxed text-foreground">
-              &ldquo;For the first time, I can see every FOIA deadline and meeting
-              in one place. It feels like the town finally has its act
-              together.&rdquo;
-            </p>
-            <p className="mt-4 text-sm text-muted-foreground">
-              Town Clerk · Small township in Ohio
-            </p>
+        {/* For clerks, not IT */}
+        <section className="border-y border-border bg-card">
+          <div className="mx-auto max-w-6xl px-4 py-14 md:px-6">
+            <div className="grid gap-10 md:grid-cols-2 md:items-center">
+              <div>
+                <h2 className="text-2xl font-semibold tracking-tight text-foreground">
+                  Designed for clerks, not IT departments
+                </h2>
+                <p className="mt-3 text-muted-foreground">
+                  No six-month implementation. No consultant army. Clerkflow is
+                  cloud-based, works in any browser, and is priced so most towns
+                  can approve it without a formal RFP.
+                </p>
+              </div>
+              <ul className="flex flex-col gap-3 text-sm text-foreground">
+                {[
+                  'Set up in days, not months',
+                  'Import existing records with guided wizard',
+                  'State-specific compliance reminders',
+                  'Unlimited staff users included',
+                  'Resident hub included at no extra cost',
+                ].map((item) => (
+                  <li key={item} className="flex items-start gap-2">
+                    <ShieldCheck className="mt-0.5 size-4 shrink-0 text-[#16a34a]" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </section>
 
+        {/* CTA */}
+        <section className="mx-auto max-w-6xl px-4 py-16 md:px-6">
+          <CtaBanner />
+        </section>
       </main>
 
       <MarketingFooter />

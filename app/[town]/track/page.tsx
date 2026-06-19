@@ -6,7 +6,6 @@ import { Search, CheckCircle2, Circle, FileSearch } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { ResidentHeader } from '@/components/resident/header'
 import { StatusPill } from '@/components/status-pill'
 import type { StatusKey } from '@/components/status-pill'
 
@@ -54,10 +53,7 @@ export default function TrackRequestPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
-      <ResidentHeader />
-
-      <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-10 md:px-6">
+    <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-10 md:px-6">
         <h1 className="text-2xl font-bold tracking-tight text-foreground">
           Track my request
         </h1>
@@ -148,7 +144,6 @@ export default function TrackRequestPage() {
             </p>
           </div>
         )}
-      </main>
-    </div>
+    </main>
   )
 }

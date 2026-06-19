@@ -1,28 +1,27 @@
 import Link from 'next/link'
 import { Landmark } from 'lucide-react'
-import { TOWN } from '@/lib/data'
+import type { PublicTown } from '@/lib/server/public-data'
 
-const NAV = [
-  { label: 'Home', href: `/${TOWN.slug}` },
-  { label: 'Meetings', href: `/${TOWN.slug}/meetings` },
-  { label: 'Apply', href: `/${TOWN.slug}/apply` },
-  { label: 'Track request', href: `/${TOWN.slug}/track` },
-  { label: 'Pay', href: `/${TOWN.slug}/pay` },
-]
+export function ResidentHeader({ town }: { town: PublicTown }) {
+  const base = `/${town.slug}`
+  const NAV = [
+    { label: 'Home', href: base },
+    { label: 'Meetings', href: `${base}/meetings` },
+    { label: 'Records request', href: `${base}/foia` },
+    { label: 'Apply', href: `${base}/apply` },
+    { label: 'Track request', href: `${base}/track` },
+  ]
 
-export function ResidentHeader() {
   return (
     <header className="border-b border-border bg-primary text-primary-foreground">
       <div className="mx-auto flex max-w-5xl flex-col gap-3 px-4 py-4 md:flex-row md:items-center md:justify-between md:px-6">
-        <Link href={`/${TOWN.slug}`} className="flex items-center gap-3">
+        <Link href={base} className="flex items-center gap-3">
           <span className="flex size-10 items-center justify-center rounded-lg bg-primary-foreground/15">
             <Landmark className="size-5" />
           </span>
           <div>
-            <p className="text-sm font-semibold leading-tight">{TOWN.name}</p>
-            <p className="text-xs text-primary-foreground/70">
-              Official resident services
-            </p>
+            <p className="text-sm font-semibold leading-tight">{town.name}</p>
+            <p className="text-xs text-primary-foreground/70">Official resident services</p>
           </div>
         </Link>
         <nav className="flex flex-wrap items-center gap-x-5 gap-y-1">

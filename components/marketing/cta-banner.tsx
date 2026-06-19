@@ -21,9 +21,10 @@ export function CtaBanner({
         </div>
         <Button
           size="lg"
+          nativeButton={false}
           render={
             <Link href="/contact">
-              Request a demo <ArrowRight className="size-4" />
+              Schedule a walkthrough <ArrowRight className="size-4" />
             </Link>
           }
         />

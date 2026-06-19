@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c ' *)",
+      "Bash(sed -i '' 's/Request a demo/Schedule a walkthrough/g' /Users/leenadudi/clerkflow/app/contact/page.tsx /Users/leenadudi/clerkflow/app/product/page.tsx /Users/leenadudi/clerkflow/components/marketing/cta-banner.tsx)",
+      "Bash(sed -i '' 's/Request demo/Schedule a walkthrough/g' /Users/leenadudi/clerkflow/app/contact/page.tsx)",
+      "Bash(cat > *)"
+    ],
+    "additionalDirectories": [
+      "/Users/leenadudi/clerkflow/app/[town]",
+      "/Users/leenadudi/clerkflow/app/[town]/foia"
+    ]
+  }
+}

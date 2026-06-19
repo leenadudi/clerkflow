@@ -4,7 +4,6 @@ import {
   CalendarClock,
   FileText,
   Users,
-  Plus,
   ArrowRight,
   Send,
 } from 'lucide-react'
@@ -48,27 +47,6 @@ export default async function CommandCenterPage() {
       <PageHeader
         title={`Good morning, ${town.clerk.name.split(' ')[0]}`}
         description="Here's what needs your attention today."
-        actions={
-          <>
-            <Button
-              variant="outline"
-              nativeButton={false}
-              render={
-                <Link href="/app/meetings">
-                  <Plus className="size-4" /> New meeting
-                </Link>
-              }
-            />
-            <Button
-              nativeButton={false}
-              render={
-                <Link href="/app/foia">
-                  <Plus className="size-4" /> New FOIA
-                </Link>
-              }
-            />
-          </>
-        }
       />
 
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">

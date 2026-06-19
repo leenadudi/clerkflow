@@ -1,12 +1,6 @@
 import Link from 'next/link'
 import { Shield } from 'lucide-react'
-import { AuthHeaderControls } from '@/components/auth/auth-header-controls'
 import { Button } from '@/components/ui/button'
-
-const NAV = [
-  { label: 'How it works', href: '/product' },
-  { label: 'Contact', href: '/contact' },
-]
 
 export function MarketingHeader() {
   return (
@@ -19,28 +13,18 @@ export function MarketingHeader() {
           <span className="text-lg font-semibold tracking-tight">Clerkflow</span>
         </Link>
 
-        <nav className="hidden items-center gap-7 md:flex">
-          {NAV.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-
         <div className="flex items-center gap-2">
-          <AuthHeaderControls
-            signInLabel="Log in"
-            signUpLabel="Sign up"
-          />
+          <a
+            href="/demo/launch"
+            className="hidden items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted sm:inline-flex"
+          >
+            Try the demo
+          </a>
           <Button
             size="sm"
             nativeButton={false}
-            className="hidden sm:inline-flex sm:h-8 sm:px-2.5"
-            render={<Link href="/contact">Request demo</Link>}
+            className="hidden sm:inline-flex sm:h-8 sm:px-3"
+            render={<Link href="/contact">Schedule a walkthrough</Link>}
           />
         </div>
       </div>

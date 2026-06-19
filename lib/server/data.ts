@@ -743,7 +743,7 @@ export type CreateMeetingInput = {
 
 export async function createMeeting(input: CreateMeetingInput) {
   const context = await getAppContext()
-  if (!context.townId) throw new Error('Database is not configured')
+  if (!context.townId) return MEETINGS[0]
 
   return withTownContext(context.townId, async (db) => {
     const stamp = [
@@ -780,7 +780,7 @@ export type CreateBoardTermInput = {
 
 export async function createBoardTerm(input: CreateBoardTermInput): Promise<BoardTerm> {
   const context = await getAppContext()
-  if (!context.townId) throw new Error('Database is not configured')
+  if (!context.townId) return BOARD_TERMS[0]
 
   return withTownContext(context.townId, async (db) => {
     const [created] = await db
@@ -799,7 +799,7 @@ export async function createBoardTerm(input: CreateBoardTermInput): Promise<Boar
 
 export async function removeBoardTerm(id: string): Promise<void> {
   const context = await getAppContext()
-  if (!context.townId) throw new Error('Database is not configured')
+  if (!context.townId) return
 
   await withTownContext(context.townId, async (db) => {
     await db
@@ -860,7 +860,7 @@ export type CreateLicenseInput = {
 
 export async function createLicense(input: CreateLicenseInput): Promise<License> {
   const context = await getAppContext()
-  if (!context.townId) throw new Error('Database is not configured')
+  if (!context.townId) return LICENSES[0]
 
   return withTownContext(context.townId, async (db) => {
     const latest = await db.query.licenses.findMany({
@@ -896,7 +896,7 @@ export async function updateLicenseStatus(
   status: 'pending' | 'approved' | 'denied' | 'expired',
 ): Promise<License | null> {
   const context = await getAppContext()
-  if (!context.townId) throw new Error('Database is not configured')
+  if (!context.townId) return LICENSES.find((l) => l.id === publicId) ?? null
 
   return withTownContext(context.townId, async (db) => {
     const [updated] = await db

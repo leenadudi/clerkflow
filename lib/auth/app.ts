@@ -1,10 +1,11 @@
 import { auth, currentUser } from '@clerk/nextjs/server'
-import { and, eq, gt, isNull } from 'drizzle-orm'
-import { getDb, isDatabaseConfigured } from '@/lib/db'
+import { eq, and, gt, isNull } from 'drizzle-orm'
+import { getDb, getDemoDb, isDatabaseConfigured, isDemoDatabaseConfigured } from '@/lib/db'
 import { townToView } from '@/lib/db/mappers'
 import { towns, users, invitations, type Town, type User } from '@/lib/db/schema'
 import { TOWN } from '@/lib/data'
 import { acceptInvitation } from '@/lib/server/team'
+import { isDemoRequest } from '@/lib/demo'
 
 export function isClerkConfigured() {
   return Boolean(
@@ -102,6 +103,29 @@ async function getDemoTown(): Promise<Town | null> {
 }
 
 export async function getAppContext(): Promise<AppContext> {
+  if (await isDemoRequest()) {
+    if (isDemoDatabaseConfigured()) {
+      try {
+        const demoDb = getDemoDb()
+        const demoTown = await demoDb.query.towns.findFirst({
+          where: eq(towns.slug, 'riverside-oh'),
+        })
+        if (demoTown) {
+          return {
+            source: 'database',
+            town: townToView(demoTown),
+            townId: demoTown.id,
+            user: null,
+            clerkUserId: null,
+          }
+        }
+      } catch {
+        // fall through to mock
+      }
+    }
+    return getMockContext()
+  }
+
   if (!isDatabaseConfigured()) {
     return getMockContext()
   }
@@ -185,6 +209,19 @@ export async function requireAdmin(): Promise<AppContext & { user: NonNullable<A
 }
 
 export async function requireStaffUser(): Promise<AppContext & { user: NonNullable<AppContext['user']> }> {
+  if (await isDemoRequest()) {
+    const context = await getAppContext()
+    return {
+      ...context,
+      user: {
+        id: 'demo-user',
+        name: context.town.clerk.name,
+        email: 'demo@clerkflow.local',
+        role: 'admin',
+      },
+    }
+  }
+
   if (!isClerkConfigured()) {
     const context = await requireAppContext()
     if (context.user) {

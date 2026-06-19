@@ -57,7 +57,7 @@ export function computeRecordsStatus(stored: string, deadlineAt: Date, now = new
   const days = daysRemaining(deadlineAt, now)
   if (days < 0) return 'overdue'
   if (days <= 3) return 'due-soon'
-  return stored // new | in_progress
+  return stored.replace(/_/g, '-') // normalise DB snake_case → UI kebab-case
 }
 
 export function foiaDocumentToView(row: FoiaDocumentRow): RecordsDocument {

@@ -29,8 +29,7 @@ const WORKSPACE = [
 ]
 
 const MANAGE = [
-  { label: 'Residents', href: '/app/residents', icon: UserSquare2 },
-  { label: 'Import', href: '/app/import', icon: Upload },
+{ label: 'Import', href: '/app/import', icon: Upload },
   { label: 'Reports', href: '/app/reports', icon: BarChart3 },
   { label: 'Compliance', href: '/app/compliance', icon: ShieldCheck },
   { label: 'Settings', href: '/app/settings', icon: Settings },

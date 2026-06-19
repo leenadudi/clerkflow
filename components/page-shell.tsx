@@ -1,7 +1,6 @@
 import { MarketingFooter } from '@/components/marketing/footer'
 import { MarketingHeader } from '@/components/marketing/header'
 import { PageHeader } from '@/components/page-header'
-import { ResidentHeader } from '@/components/resident/header'
 import { Card, CardContent } from '@/components/ui/card'
 
 type PageShellProps = {
@@ -38,12 +37,9 @@ export function PageShell({
 
   if (variant === 'resident') {
     return (
-      <div className="flex min-h-screen flex-col bg-background">
-        <ResidentHeader />
-        <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-10 md:px-6">
-          {content}
-        </main>
-      </div>
+      <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-10 md:px-6">
+        {content}
+      </main>
     )
   }
 

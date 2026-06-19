@@ -74,29 +74,30 @@ export default async function ServicesPage({
         <div className="mt-4 flex flex-col gap-3">
           {filtered.map((license) => (
             <Link key={license.id} href={`/app/services/${license.id}`}>
-              <Card className="flex items-center justify-between gap-4 px-5 py-4 transition-colors hover:border-primary/40 hover:bg-accent">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="text-xs font-semibold text-muted-foreground">{license.id}</p>
-                    <StatusPill status={license.status as StatusKey} />
+              <Card className="px-5 py-4 transition-colors hover:border-primary/40 hover:bg-accent">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs font-semibold text-muted-foreground">{license.id}</p>
+                      <StatusPill status={license.status as StatusKey} />
+                    </div>
+                    <p className="mt-1 text-sm font-medium text-foreground">
+                      {license.typeLabel} — {license.applicantName}
+                    </p>
+                    {license.description && (
+                      <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                        {license.description}
+                      </p>
+                    )}
                   </div>
-                  <p className="mt-0.5 text-sm font-medium text-foreground">
-                    {license.typeLabel} — {license.applicantName}
-                  </p>
-                  {license.description && (
-                    <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                      {license.description}
-                    </p>
-                  )}
-                </div>
-                <div className="shrink-0 text-right">
-                  <p className="text-xs text-muted-foreground">Submitted</p>
-                  <p className="text-xs font-medium text-foreground">{license.submittedAt}</p>
-                  {license.fee && (
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {license.fee} {license.feePaid ? '· Paid' : '· Unpaid'}
-                    </p>
-                  )}
+                  <div className="shrink-0 text-right">
+                    <p className="text-xs text-muted-foreground">Submitted {license.submittedAt}</p>
+                    {license.fee ? (
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {license.fee} · {license.feePaid ? 'Paid' : 'Unpaid'}
+                      </p>
+                    ) : null}
+                  </div>
                 </div>
               </Card>
             </Link>

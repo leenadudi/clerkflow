@@ -6,7 +6,7 @@ import {
   hasInternalSessionCookie,
 } from '@/lib/auth/internal-edge'
 
-const isAppRoute = createRouteMatcher(['/app(.*)'])
+const isAppRoute = createRouteMatcher(['/app(.*)', '/api/app(.*)'])
 const isPublicAppRoute = createRouteMatcher([
   '/app/login(.*)',
   '/app/sign-up(.*)',
@@ -68,6 +68,19 @@ export default clerkMiddleware(async (auth, request) => {
   }
 
   if (isAppRoute(request) && !isPublicAppRoute(request)) {
+    // Demo mode: cookie set by /demo/launch — bypass Clerk auth and inject header
+    // so server components and API routes can detect demo context.
+    // Only activates when there is no real Clerk session.
+    const demoMode = request.cookies.get('clerkflow-demo')?.value === '1'
+    if (demoMode) {
+      const { userId } = await auth()
+      if (!userId) {
+        const requestHeaders = new Headers(request.headers)
+        requestHeaders.set('x-clerkflow-demo', '1')
+        return NextResponse.next({ request: { headers: requestHeaders } })
+      }
+    }
+
     if (process.env.CLERK_SECRET_KEY) {
       await auth.protect()
     }

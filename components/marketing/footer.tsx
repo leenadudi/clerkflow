@@ -21,19 +21,18 @@ export function MarketingFooter() {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-8 sm:grid-cols-3">
+          <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
             <FooterCol
               title="Product"
               links={[
-                { label: 'Overview', href: '/product' },
-                { label: 'For Small Towns', href: '/for-small-towns' },
+                { label: 'For small towns', href: '/for-small-towns' },
+                { label: 'Schedule a walkthrough', href: '/contact' },
               ]}
             />
             <FooterCol
               title="Company"
               links={[
                 { label: 'About', href: '/about' },
-                { label: 'Contact', href: '/contact' },
               ]}
             />
             <FooterCol
@@ -41,6 +40,12 @@ export function MarketingFooter() {
               links={[
                 { label: 'Privacy', href: '/privacy' },
                 { label: 'Terms', href: '/terms' },
+              ]}
+            />
+            <FooterCol
+              title="Account"
+              links={[
+                { label: 'Log in', href: '/app/login' },
               ]}
             />
           </div>
