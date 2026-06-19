@@ -15,7 +15,7 @@ export function MarketingHeader() {
 
         <div className="flex items-center gap-2">
           <a
-            href="/demo/launch"
+            href="/demo"
             className="hidden items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted sm:inline-flex"
           >
             Try the demo

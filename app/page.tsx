@@ -107,7 +107,7 @@ export default async function HomePage() {
                 }
               />
               <a
-                href="/demo/launch"
+                href="/demo"
                 className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
               >
                 Try the demo
