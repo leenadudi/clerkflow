@@ -46,11 +46,13 @@ import {
   foiaMessages,
   foiaRequests,
   foiaWorkflowSteps,
+  gmailConnections,
   licenses,
   meetingActionItems,
   meetingAttendance,
   meetings,
   motions,
+  processedEmails,
   towns,
 } from '@/lib/db/schema'
 import { getAppContext } from '@/lib/auth/app'
@@ -649,12 +651,14 @@ export async function sendFoiaMessage(
 ): Promise<boolean> {
   const context = await getAppContext()
   if (!context.townId) return false
+  const townId = context.townId
 
-  return withTownContext(context.townId, async (db) => {
+  // Run all DB inserts inside the transaction; capture what we need for routing
+  const routingInfo = await withTownContext(townId, async (db) => {
     const request = await db.query.foiaRequests.findFirst({
-      where: and(eq(foiaRequests.townId, context.townId!), eq(foiaRequests.publicId, publicId)),
+      where: and(eq(foiaRequests.townId, townId), eq(foiaRequests.publicId, publicId)),
     })
-    if (!request) return false
+    if (!request) return null
 
     await db.insert(foiaMessages).values({
       foiaRequestId: request.id,
@@ -671,40 +675,79 @@ export async function sendFoiaMessage(
       detail: body.slice(0, 60),
     })
 
-    // Send email notification to requester for external (non-requester) messages
-    if (
-      process.env.RESEND_API_KEY &&
-      request.requesterEmail &&
-      !request.isAnonymous &&
-      authorRole !== 'Requester'
-    ) {
-      try {
-        const { Resend } = await import('resend')
-        const resend = new Resend(process.env.RESEND_API_KEY)
-        await resend.emails.send({
-          from: 'noreply@clerkflow.software',
-          to: request.requesterEmail,
-          subject: `Update on your open records request — ${publicId}`,
-          text: [
-            `Dear ${request.requesterName},`,
-            '',
-            `You have a new message regarding your open records request ${publicId}:`,
-            '',
-            body,
-            '',
-            'To track your request, visit your town\'s resident hub and enter your confirmation number.',
-            '',
-            'Thank you,',
-            context.town.clerk.name,
-          ].join('\n'),
-        })
-      } catch {
-        // Email failure must never throw — log silently
-      }
+    return {
+      source: request.source,
+      requesterName: request.requesterName,
+      requesterEmail: request.requesterEmail,
+      isAnonymous: request.isAnonymous,
     }
-
-    return true
   })
+
+  if (!routingInfo) return false
+
+  const { source, requesterName, requesterEmail, isAnonymous } = routingInfo
+
+  // Staff replies only — requester messages go through the public hub
+  if (authorRole === 'Requester') return true
+
+  if (source === 'email') {
+    // Thread the reply back through the original Gmail thread
+    try {
+      const db = getDb()
+      const processed = await db.query.processedEmails.findFirst({
+        where: and(
+          eq(processedEmails.townId, townId),
+          eq(processedEmails.linkedRecordId, publicId),
+        ),
+      })
+      if (processed?.gmailThreadId && processed.connectionId) {
+        const connection = await db.query.gmailConnections.findFirst({
+          where: and(
+            eq(gmailConnections.id, processed.connectionId),
+            eq(gmailConnections.isActive, true),
+          ),
+        })
+        if (connection?.clerkUserId && requesterEmail) {
+          const { sendReply } = await import('@/lib/gmail/client')
+          await sendReply(connection.clerkUserId, {
+            to: requesterEmail,
+            subject: `Re: ${processed.subject ?? publicId}`,
+            body,
+            threadId: processed.gmailThreadId,
+          })
+        }
+      }
+    } catch {
+      // Gmail reply failure must never throw — correspondence thread already saved
+    }
+  } else if (process.env.RESEND_API_KEY && requesterEmail && !isAnonymous) {
+    // Web/walk-in/mail/phone sources — send email notification via Resend
+    try {
+      const { Resend } = await import('resend')
+      const resend = new Resend(process.env.RESEND_API_KEY)
+      await resend.emails.send({
+        from: 'noreply@clerkflow.software',
+        to: requesterEmail,
+        subject: `Update on your open records request — ${publicId}`,
+        text: [
+          `Dear ${requesterName},`,
+          '',
+          `You have a new message regarding your open records request ${publicId}:`,
+          '',
+          body,
+          '',
+          "To track your request, visit your town's resident hub and enter your confirmation number.",
+          '',
+          'Thank you,',
+          context.town.clerk.name,
+        ].join('\n'),
+      })
+    } catch {
+      // Email failure must never throw — log silently
+    }
+  }
+
+  return true
 }
 
 export async function addFoiaMessage(publicId: string, body: string) {

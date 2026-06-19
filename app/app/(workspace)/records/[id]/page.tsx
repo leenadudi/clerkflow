@@ -2,12 +2,7 @@ import { notFound } from 'next/navigation'
 import { AlertTriangle, AlertCircle } from 'lucide-react'
 import { PageHeader } from '@/components/page-header'
 import { StatusPill } from '@/components/status-pill'
-import {
-  getFoiaRequest,
-  getFoiaThread,
-  getFoiaDocuments,
-  getFoiaAuditLog,
-} from '@/lib/server/data'
+import { getFoiaRequest, getFoiaThread, getFoiaDocuments } from '@/lib/server/data'
 import { RecordsTabs } from './_components/records-tabs'
 
 export default async function RecordDetailPage({
@@ -19,11 +14,7 @@ export default async function RecordDetailPage({
   const req = await getFoiaRequest(id)
   if (!req) notFound()
 
-  const [thread, documents, auditLog] = await Promise.all([
-    getFoiaThread(id),
-    getFoiaDocuments(id),
-    getFoiaAuditLog(id),
-  ])
+  const [thread, documents] = await Promise.all([getFoiaThread(id), getFoiaDocuments(id)])
 
   const isOverdue = req.status === 'overdue'
   const isDueSoon = req.status === 'due-soon'
@@ -70,13 +61,7 @@ export default async function RecordDetailPage({
         </div>
       )}
 
-      <RecordsTabs
-        requestId={id}
-        request={req}
-        thread={thread}
-        documents={documents}
-        auditLog={auditLog}
-      />
+      <RecordsTabs requestId={id} request={req} thread={thread} documents={documents} />
     </div>
   )
 }

@@ -8,28 +8,29 @@ import {
   Archive,
   ClipboardList,
   Users,
-  UserSquare2,
   Send,
   Upload,
   BarChart3,
   ShieldCheck,
   Settings,
   Shield,
+  Inbox,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useWorkspace } from './workspace-context'
 
 const WORKSPACE = [
   { label: 'Home', href: '/app', icon: LayoutGrid },
+  { label: 'Inbox', href: '/app/inbox', icon: Inbox },
   { label: 'Meetings', href: '/app/meetings', icon: Calendar },
   { label: 'Records Requests', href: '/app/records', icon: Archive, badgeKey: 'foia' as const },
   { label: 'Permits & Licenses', href: '/app/services', icon: ClipboardList },
   { label: 'Boards', href: '/app/boards', icon: Users },
-  { label: 'Publish', href: '/app/publish', icon: Send },
 ]
 
 const MANAGE = [
-{ label: 'Import', href: '/app/import', icon: Upload },
+  { label: 'Publish', href: '/app/publish', icon: Send },
+  { label: 'Import', href: '/app/import', icon: Upload },
   { label: 'Reports', href: '/app/reports', icon: BarChart3 },
   { label: 'Compliance', href: '/app/compliance', icon: ShieldCheck },
   { label: 'Settings', href: '/app/settings', icon: Settings },

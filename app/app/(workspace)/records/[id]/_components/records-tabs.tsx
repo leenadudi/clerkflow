@@ -11,12 +11,10 @@ import {
   FileText,
   Send,
   Paperclip,
-  Plus,
   CheckCircle2,
   XCircle,
   AlertTriangle,
   Shield,
-  History,
   RotateCcw,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -33,7 +31,7 @@ import {
   TabsContent,
 } from '@/components/ui/tabs'
 import type { FoiaRequest } from '@/lib/data'
-import type { FoiaThreadMessage, RecordsDocument, AuditLogEntry } from '@/lib/db/mappers'
+import type { FoiaThreadMessage, RecordsDocument } from '@/lib/db/mappers'
 
 // ---------------------------------------------------------------------------
 // Priority badge
@@ -330,25 +328,32 @@ function OverviewTab({
 }
 
 // ---------------------------------------------------------------------------
-// TAB 2 — Correspondence
+// TAB 2 — Correspondence (with inline document attachment)
 // ---------------------------------------------------------------------------
 
-function CorrespondenceTab({
+function CorrespondenceDocumentsTab({
   requestId,
   thread: initialThread,
+  documents: initialDocuments,
 }: {
   requestId: string
   thread: FoiaThreadMessage[]
+  documents: RecordsDocument[]
 }) {
   const [thread, setThread] = useState(initialThread)
   const [body, setBody] = useState('')
   const [sending, setSending] = useState(false)
-  const [error, setError] = useState('')
+  const [sendError, setSendError] = useState('')
+
+  const [documents, setDocuments] = useState(initialDocuments)
+  const [showAttach, setShowAttach] = useState(false)
+  const [adding, setAdding] = useState(false)
+  const [attachError, setAttachError] = useState('')
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault()
     if (!body.trim()) return
-    setError('')
+    setSendError('')
     setSending(true)
     const res = await fetch(`/api/app/records/${requestId}/messages`, {
       method: 'POST',
@@ -361,20 +366,49 @@ function CorrespondenceTab({
     })
     setSending(false)
     if (!res.ok) {
-      setError('Failed to send message. Please try again.')
+      setSendError('Failed to send message. Please try again.')
       return
     }
     const now = new Date()
-    const timeStr = now.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    }) + ' · ' + now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+    const timeStr =
+      now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) +
+      ' · ' +
+      now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
     setThread((prev) => [
       ...prev,
       { author: 'Staff', role: 'Town Clerk', time: timeStr, body: body.trim() },
     ])
     setBody('')
+  }
+
+  async function handleAttach(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    setAttachError('')
+    setAdding(true)
+    const form = new FormData(e.currentTarget)
+    const name = (form.get('name') as string).trim()
+    const fileUrl = (form.get('fileUrl') as string).trim()
+
+    if (!name || !fileUrl) {
+      setAttachError('Name and URL are required.')
+      setAdding(false)
+      return
+    }
+
+    const res = await fetch(`/api/app/records/${requestId}/documents`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, fileUrl }),
+    })
+    setAdding(false)
+    if (!res.ok) {
+      setAttachError('Failed to attach document. Please try again.')
+      return
+    }
+    const data = (await res.json()) as { document?: RecordsDocument }
+    if (data.document) setDocuments((prev) => [...prev, data.document!])
+    setShowAttach(false)
+    ;(e.target as HTMLFormElement).reset()
   }
 
   return (
@@ -383,9 +417,10 @@ function CorrespondenceTab({
         <CardTitle className="text-base">Correspondence</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        {thread.length === 0 && (
+        {thread.length === 0 && documents.length === 0 && (
           <p className="text-sm text-muted-foreground">No messages yet.</p>
         )}
+
         {thread.map((msg, i) => (
           <div
             key={i}
@@ -407,113 +442,11 @@ function CorrespondenceTab({
           </div>
         ))}
 
-        <Separator />
-
-        <form onSubmit={handleSend} className="space-y-3">
-          <Textarea
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            placeholder="Write a reply to the requester…"
-            className="min-h-24 resize-none"
-            aria-label="Reply to requester"
-          />
-          {error && <p className="text-sm text-destructive">{error}</p>}
-          <div className="flex items-center justify-between">
-            <Button type="button" variant="ghost" size="sm" disabled>
-              <Paperclip className="size-4" /> Attach
-            </Button>
-            <Button type="submit" disabled={sending || !body.trim()}>
-              <Send className="size-4" />
-              {sending ? 'Sending…' : 'Send reply'}
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// TAB 3 — Documents
-// ---------------------------------------------------------------------------
-
-function DocumentsTab({
-  requestId,
-  documents: initialDocuments,
-}: {
-  requestId: string
-  documents: RecordsDocument[]
-}) {
-  const [documents, setDocuments] = useState(initialDocuments)
-  const [showForm, setShowForm] = useState(false)
-  const [adding, setAdding] = useState(false)
-  const [formError, setFormError] = useState('')
-
-  function formatFileSize(bytes?: number) {
-    if (!bytes) return null
-    if (bytes < 1024) return `${bytes} B`
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-  }
-
-  async function handleAddDocument(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    setFormError('')
-    setAdding(true)
-    const form = new FormData(e.currentTarget)
-    const name = (form.get('name') as string).trim()
-    const fileUrl = (form.get('fileUrl') as string).trim()
-
-    if (!name || !fileUrl) {
-      setFormError('Name and URL are required.')
-      setAdding(false)
-      return
-    }
-
-    const res = await fetch(`/api/app/records/${requestId}/documents`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, fileUrl }),
-    })
-    setAdding(false)
-    if (!res.ok) {
-      setFormError('Failed to add document. Please try again.')
-      return
-    }
-    const data = await res.json() as { document?: RecordsDocument }
-    if (data.document) {
-      setDocuments((prev) => [...prev, data.document!])
-    }
-    setShowForm(false)
-  }
-
-  return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-3">
-        <CardTitle className="text-base">Documents</CardTitle>
-        {!showForm && (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setShowForm(true)}
-          >
-            <Plus className="size-4" /> Add document
-          </Button>
-        )}
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {documents.length === 0 && !showForm && (
-          <p className="text-sm text-muted-foreground">
-            No documents attached yet. Add the first document to get started.
-          </p>
-        )}
-
         {documents.length > 0 && (
           <ul className="divide-y divide-border rounded-lg border">
             {documents.map((doc) => (
-              <li key={doc.id} className="flex items-start gap-3 px-4 py-3">
-                <FileText className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+              <li key={doc.id} className="flex items-center gap-3 px-4 py-2.5">
+                <FileText className="size-4 shrink-0 text-muted-foreground" />
                 <div className="min-w-0 flex-1">
                   <a
                     href={doc.fileUrl}
@@ -523,11 +456,7 @@ function DocumentsTab({
                   >
                     {doc.name}
                   </a>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {doc.uploadedBy}
-                    {doc.fileSize ? ` · ${formatFileSize(doc.fileSize)}` : ''}
-                    {` · ${doc.createdAt}`}
-                  </p>
+                  <span className="ml-2 text-xs text-muted-foreground">{doc.createdAt}</span>
                 </div>
                 {doc.isRedacted && (
                   <span className="inline-flex shrink-0 items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
@@ -539,46 +468,44 @@ function DocumentsTab({
           </ul>
         )}
 
-        {showForm && (
+        <Separator />
+
+        {showAttach && (
           <form
-            onSubmit={handleAddDocument}
-            className="space-y-3 rounded-lg border border-border bg-muted/30 p-4"
+            onSubmit={handleAttach}
+            className="space-y-3 rounded-lg border border-border bg-muted/30 p-3"
           >
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Add document
+              Attach document
             </p>
-            <div className="space-y-1.5">
-              <Label htmlFor="doc-name">Document name</Label>
-              <Input
-                id="doc-name"
-                name="name"
-                required
-                placeholder="e.g. Police report FOIA-2026-1042.pdf"
-                autoFocus
-              />
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="space-y-1">
+                <Label htmlFor="attach-name">Document name</Label>
+                <Input
+                  id="attach-name"
+                  name="name"
+                  required
+                  placeholder="e.g. Police report.pdf"
+                  autoFocus
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="attach-url">File URL</Label>
+                <Input id="attach-url" name="fileUrl" type="url" required placeholder="https://…" />
+              </div>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="doc-url">File URL</Label>
-              <Input
-                id="doc-url"
-                name="fileUrl"
-                type="url"
-                required
-                placeholder="https://…"
-              />
-            </div>
-            {formError && <p className="text-sm text-destructive">{formError}</p>}
+            {attachError && <p className="text-sm text-destructive">{attachError}</p>}
             <div className="flex gap-2">
               <Button type="submit" size="sm" disabled={adding}>
-                {adding ? 'Adding…' : 'Add document'}
+                {adding ? 'Attaching…' : 'Attach'}
               </Button>
               <Button
                 type="button"
                 size="sm"
                 variant="ghost"
                 onClick={() => {
-                  setShowForm(false)
-                  setFormError('')
+                  setShowAttach(false)
+                  setAttachError('')
                 }}
               >
                 Cancel
@@ -586,6 +513,31 @@ function DocumentsTab({
             </div>
           </form>
         )}
+
+        <form onSubmit={handleSend} className="space-y-3">
+          <Textarea
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            placeholder="Write a reply to the requester…"
+            className="min-h-24 resize-none"
+            aria-label="Reply to requester"
+          />
+          {sendError && <p className="text-sm text-destructive">{sendError}</p>}
+          <div className="flex items-center justify-between">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowAttach((v) => !v)}
+            >
+              <Paperclip className="size-4" /> Attach
+            </Button>
+            <Button type="submit" disabled={sending || !body.trim()}>
+              <Send className="size-4" />
+              {sending ? 'Sending…' : 'Send reply'}
+            </Button>
+          </div>
+        </form>
       </CardContent>
     </Card>
   )
@@ -832,67 +784,6 @@ function FulfillDenyTab({
 }
 
 // ---------------------------------------------------------------------------
-// TAB 5 — Audit Log
-// ---------------------------------------------------------------------------
-
-const AUDIT_ACTION_LABELS: Record<string, string> = {
-  created: 'Request created',
-  status_changed: 'Status updated',
-  message_sent: 'Message sent',
-  document_added: 'Document added',
-  fulfilled: 'Request fulfilled',
-  denied: 'Request denied',
-  withdrawn: 'Request withdrawn',
-  assigned: 'Assignee changed',
-  notes_updated: 'Notes updated',
-}
-
-function auditActionLabel(action: string) {
-  return AUDIT_ACTION_LABELS[action] ?? action.replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase())
-}
-
-function AuditLogTab({ auditLog }: { auditLog: AuditLogEntry[] }) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Audit log</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {auditLog.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No audit events recorded yet.</p>
-        ) : (
-          <ol className="relative space-y-0 border-l border-border pl-5">
-            {auditLog.map((entry, i) => (
-              <li key={entry.id ?? i} className="relative pb-6 last:pb-0">
-                {/* Timeline dot */}
-                <span className="absolute -left-[17px] top-1 flex size-[9px] items-center justify-center rounded-full border border-border bg-background" />
-                <div className="space-y-0.5">
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                    <p className="text-sm font-medium text-foreground">
-                      {auditActionLabel(entry.action)}
-                    </p>
-                    <span className="text-xs text-muted-foreground">{entry.createdAt}</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {entry.actorName}
-                    {entry.actorRole ? ` · ${entry.actorRole}` : ''}
-                  </p>
-                  {entry.detail && (
-                    <p className="mt-1 rounded bg-muted px-2 py-1 text-xs text-muted-foreground">
-                      {entry.detail}
-                    </p>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ol>
-        )}
-      </CardContent>
-    </Card>
-  )
-}
-
-// ---------------------------------------------------------------------------
 // Main RecordsTabs component
 // ---------------------------------------------------------------------------
 
@@ -901,19 +792,12 @@ export type RecordsTabsProps = {
   request: FoiaRequest
   thread: FoiaThreadMessage[]
   documents: RecordsDocument[]
-  auditLog: AuditLogEntry[]
 }
 
-const VALID_TABS = ['overview', 'correspondence', 'documents', 'fulfill', 'audit'] as const
+const VALID_TABS = ['overview', 'correspondence', 'fulfill'] as const
 type TabValue = (typeof VALID_TABS)[number]
 
-export function RecordsTabs({
-  requestId,
-  request,
-  thread,
-  documents,
-  auditLog,
-}: RecordsTabsProps) {
+export function RecordsTabs({ requestId, request, thread, documents }: RecordsTabsProps) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -946,19 +830,7 @@ export function RecordsTabs({
             </span>
           )}
         </TabsTrigger>
-        <TabsTrigger value="documents">
-          Documents
-          {documents.length > 0 && (
-            <span className="ml-1.5 inline-flex size-4 items-center justify-center rounded-full bg-muted text-[10px] font-semibold text-muted-foreground">
-              {documents.length}
-            </span>
-          )}
-        </TabsTrigger>
         <TabsTrigger value="fulfill">Fulfill / Deny</TabsTrigger>
-        <TabsTrigger value="audit">
-          <History className="size-3.5" />
-          Audit log
-        </TabsTrigger>
       </TabsList>
 
       <TabsContent value="overview" className="mt-5">
@@ -966,19 +838,15 @@ export function RecordsTabs({
       </TabsContent>
 
       <TabsContent value="correspondence" className="mt-5">
-        <CorrespondenceTab requestId={requestId} thread={thread} />
-      </TabsContent>
-
-      <TabsContent value="documents" className="mt-5">
-        <DocumentsTab requestId={requestId} documents={documents} />
+        <CorrespondenceDocumentsTab
+          requestId={requestId}
+          thread={thread}
+          documents={documents}
+        />
       </TabsContent>
 
       <TabsContent value="fulfill" className="mt-5">
         <FulfillDenyTab requestId={requestId} request={request} />
-      </TabsContent>
-
-      <TabsContent value="audit" className="mt-5">
-        <AuditLogTab auditLog={auditLog} />
       </TabsContent>
     </Tabs>
   )

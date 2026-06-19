@@ -7,12 +7,14 @@ import {
   foiaMessages,
   foiaRequests,
   foiaWorkflowSteps,
+  gmailConnections,
   invitations,
   licenses,
   meetingActionItems,
   meetingAttendance,
   meetings,
   motions,
+  processedEmails,
   towns,
   users,
 } from './schema'
@@ -132,5 +134,24 @@ export const boardTermsRelations = relations(boardTerms, ({ one }) => ({
   town: one(towns, {
     fields: [boardTerms.townId],
     references: [towns.id],
+  }),
+}))
+
+export const gmailConnectionsRelations = relations(gmailConnections, ({ one, many }) => ({
+  town: one(towns, {
+    fields: [gmailConnections.townId],
+    references: [towns.id],
+  }),
+  processedEmails: many(processedEmails),
+}))
+
+export const processedEmailsRelations = relations(processedEmails, ({ one }) => ({
+  town: one(towns, {
+    fields: [processedEmails.townId],
+    references: [towns.id],
+  }),
+  connection: one(gmailConnections, {
+    fields: [processedEmails.connectionId],
+    references: [gmailConnections.id],
   }),
 }))

@@ -309,6 +309,53 @@ export const licenses = pgTable(
   (table) => [uniqueIndex('licenses_town_public_id').on(table.townId, table.publicId)],
 )
 
+export const gmailConnections = pgTable('gmail_connections', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  townId: uuid('town_id')
+    .references(() => towns.id, { onDelete: 'cascade' })
+    .notNull(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+  clerkUserId: text('clerk_user_id').notNull(),
+  gmailAddress: text('gmail_address').notNull(),
+  connectedAt: timestamp('connected_at', { withTimezone: true }).defaultNow().notNull(),
+  lastCheckedAt: timestamp('last_checked_at', { withTimezone: true }),
+  isActive: boolean('is_active').notNull().default(true),
+  emailsProcessed: integer('emails_processed').notNull().default(0),
+  requestsCreated: integer('requests_created').notNull().default(0),
+})
+
+export const processedEmails = pgTable(
+  'processed_emails',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    townId: uuid('town_id')
+      .references(() => towns.id, { onDelete: 'cascade' })
+      .notNull(),
+    connectionId: uuid('connection_id')
+      .references(() => gmailConnections.id, { onDelete: 'cascade' })
+      .notNull(),
+    gmailMessageId: text('gmail_message_id').notNull(),
+    gmailThreadId: text('gmail_thread_id').notNull(),
+    fromEmail: text('from_email').notNull(),
+    fromName: text('from_name').notNull().default(''),
+    subject: text('subject').notNull().default(''),
+    bodyText: text('body_text').notNull().default(''),
+    receivedAt: timestamp('received_at', { withTimezone: true }).notNull(),
+    processedAt: timestamp('processed_at', { withTimezone: true }).defaultNow().notNull(),
+    // records_request | meeting_related | permit_application | resident_complaint | board_related | general_inquiry | spam_or_vendor
+    classification: text('classification').notNull(),
+    aiConfidence: text('ai_confidence').notNull().default('medium'),
+    aiSummary: text('ai_summary'),
+    linkedRecordId: text('linked_record_id'),
+    linkedRecordType: text('linked_record_type'),
+    // draft | confirmed | handled | spam | error
+    status: text('status').notNull().default('draft'),
+    clerkNote: text('clerk_note'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [uniqueIndex('processed_emails_msg_id').on(table.townId, table.gmailMessageId)],
+)
+
 export const prospects = pgTable('prospects', {
   id: text('id').primaryKey(),
   townName: text('town_name').notNull(),
@@ -340,3 +387,5 @@ export type ProspectRow = typeof prospects.$inferSelect
 export type MotionRow = typeof motions.$inferSelect
 export type MeetingActionItemRow = typeof meetingActionItems.$inferSelect
 export type MeetingAttendanceRow = typeof meetingAttendance.$inferSelect
+export type GmailConnectionRow = typeof gmailConnections.$inferSelect
+export type ProcessedEmailRow = typeof processedEmails.$inferSelect

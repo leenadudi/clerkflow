@@ -7,6 +7,7 @@ import { WorkspaceProvider } from '@/components/clerk/workspace-context'
 import { getTownView, listFoiaRequests } from '@/lib/server/data'
 import { getAppContext, isClerkConfigured } from '@/lib/auth/app'
 import { isDatabaseConfigured } from '@/lib/db'
+import { maybeAutoConnect } from '@/lib/gmail/auto-connect'
 
 export const metadata: Metadata = {
   title: 'Clerkflow — Home',
@@ -27,6 +28,15 @@ export default async function WorkspaceLayout({
     !context.user
   ) {
     redirect('/app/onboarding')
+  }
+
+  // Auto-connect Gmail if the user signed in with Google and granted Gmail scopes
+  if (context.townId && context.clerkUserId && context.user) {
+    void maybeAutoConnect({
+      townId: context.townId,
+      userId: context.user.id,
+      clerkUserId: context.clerkUserId,
+    })
   }
 
   const h = await headers()
