@@ -87,7 +87,7 @@ export default async function CommandCenterPage() {
               size="sm"
               nativeButton={false}
               render={
-                <Link href="/app/foia">
+                <Link href="/app/records">
                   View all FOIA <ArrowRight className="size-4" />
                 </Link>
               }
@@ -97,7 +97,7 @@ export default async function CommandCenterPage() {
             {[...overdue, ...dueThisWeek].slice(0, 4).map((req) => (
               <Link
                 key={req.id}
-                href={`/app/foia/${req.id}`}
+                href={`/app/records/${req.id}`}
                 className="flex items-center justify-between gap-4 rounded-lg border border-border p-3 transition-colors hover:bg-accent"
               >
                 <div className="min-w-0">

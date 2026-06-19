@@ -23,7 +23,7 @@ const DOC_TYPE_LABELS: Record<DocType, string> = {
 const DOC_TYPE_DESTINATIONS: Record<DocType, string> = {
   board_roster: '/app/boards',
   meeting_list: '/app/meetings',
-  foia_log: '/app/foia',
+  foia_log: '/app/records',
   license_log: '/app/services',
   unknown: '/app',
 }

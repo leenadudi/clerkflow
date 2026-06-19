@@ -14,7 +14,8 @@ export default async function PublishPage() {
   ])
 
   const completedFoia = foiaRequests.filter((r) => r.status === 'complete')
-  const residentHubUrl = `https://${town.slug}.clerkflow.software`
+  const residentHubUrl = `/${town.slug}`
+  const residentHubDisplay = `clerkflow.software/${town.slug}`
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -43,7 +44,7 @@ export default async function PublishPage() {
           rel="noopener noreferrer"
           className="mt-0.5 text-sm text-primary hover:underline"
         >
-          {town.slug}.clerkflow.software
+          {residentHubDisplay}
         </a>
         <p className="mt-2 text-xs text-muted-foreground">
           Residents can view published meetings, submit FOIA requests, apply for permits, and track
@@ -100,7 +101,7 @@ export default async function PublishPage() {
               <FileText className="size-4 text-muted-foreground" />
               Completed FOIA requests
             </h2>
-            <Link href="/app/foia" className="text-xs text-primary hover:underline">
+            <Link href="/app/records" className="text-xs text-primary hover:underline">
               Manage records →
             </Link>
           </div>
@@ -112,7 +113,7 @@ export default async function PublishPage() {
           ) : (
             <div className="flex flex-col gap-2">
               {completedFoia.slice(0, 5).map((req) => (
-                <Link key={req.id} href={`/app/foia/${req.id}`}>
+                <Link key={req.id} href={`/app/records/${req.id}`}>
                   <Card className="flex items-center justify-between px-4 py-3 transition-colors hover:border-primary/40 hover:bg-accent">
                     <div>
                       <p className="text-xs font-semibold text-muted-foreground">{req.id}</p>
