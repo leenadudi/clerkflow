@@ -31,7 +31,7 @@ const SECTIONS = [
   },
   {
     title: 'Your rights',
-    body: 'You may request access to, correction of, or deletion of personal information we hold about you by contacting hello@clerkflow.software. Town administrators can export operational data at any time from the Settings page.',
+    body: 'You may request access to, correction of, or deletion of personal information we hold about you by contacting leena@clerkflow.software. Town administrators can export operational data at any time from the Settings page.',
   },
   {
     title: 'Changes to this policy',
@@ -39,7 +39,7 @@ const SECTIONS = [
   },
   {
     title: 'Contact',
-    body: 'Questions about this privacy policy? Email us at hello@clerkflow.software.',
+    body: 'Questions about this privacy policy? Email us at leena@clerkflow.software.',
   },
 ]
 

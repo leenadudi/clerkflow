@@ -11,7 +11,7 @@ const SECTIONS = [
   },
   {
     title: 'Accounts and access',
-    body: 'You are responsible for maintaining the confidentiality of account credentials and for all activity under your account. Town administrators control staff access through role-based permissions. Notify us immediately at hello@clerkflow.software if you suspect unauthorized access.',
+    body: 'You are responsible for maintaining the confidentiality of account credentials and for all activity under your account. Town administrators control staff access through role-based permissions. Notify us immediately at leena@clerkflow.software if you suspect unauthorized access.',
   },
   {
     title: 'Acceptable use',
@@ -47,7 +47,7 @@ const SECTIONS = [
   },
   {
     title: 'Contact',
-    body: 'Questions about these terms? Email hello@clerkflow.software.',
+    body: 'Questions about these terms? Email leena@clerkflow.software.',
   },
 ]
 

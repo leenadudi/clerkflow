@@ -207,6 +207,8 @@ export const meetings = pgTable(
     minutesPublishedAt: timestamp('minutes_published_at', { withTimezone: true }),
     internalNotes: text('internal_notes').notNull().default(''),
     minutesDraft: text('minutes_draft').notNull().default(''),
+    transcript: text('transcript').notNull().default(''),
+    transcriptSource: text('transcript_source').notNull().default(''),
     presidingOfficer: text('presiding_officer').notNull().default(''),
     calledToOrderAt: text('called_to_order_at').notNull().default(''),
     adjournedAt: text('adjourned_at').notNull().default(''),

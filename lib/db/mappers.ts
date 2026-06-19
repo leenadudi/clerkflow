@@ -190,6 +190,8 @@ export function meetingToView(row: MeetingRow): Meeting {
     meetingType: row.meetingType,
     agendaPublishedAt: row.agendaPublishedAt ? formatDate(row.agendaPublishedAt) : undefined,
     minutesDraft: row.minutesDraft,
+    transcript: row.transcript || undefined,
+    transcriptSource: row.transcriptSource || undefined,
     presidingOfficer: row.presidingOfficer,
     isPast: row.startsAt < new Date(),
   }

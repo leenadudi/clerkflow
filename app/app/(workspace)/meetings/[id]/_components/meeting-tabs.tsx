@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Pencil, Check, Send, Sparkles, Loader2, FileText, ExternalLink } from 'lucide-react'
+import { Plus, Pencil, Check, Send, Sparkles, Loader2, FileText, ExternalLink, Mic, Upload, Link, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -1258,6 +1258,190 @@ function PublishTab({
   )
 }
 
+// ---------- Transcription tab ----------
+
+function TranscriptionTab({
+  meetingId,
+  initialTranscript,
+  initialSource,
+  onUseForMinutes,
+}: {
+  meetingId: string
+  initialTranscript?: string
+  initialSource?: string
+  onUseForMinutes: (text: string) => void
+}) {
+  const [transcript, setTranscript] = useState(initialTranscript ?? '')
+  const [source, setSource] = useState(initialSource ?? '')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [youtubeUrl, setYoutubeUrl] = useState('')
+  const [mode, setMode] = useState<'idle' | 'youtube' | 'upload'>('idle')
+  const fileRef = useRef<HTMLInputElement>(null)
+
+  async function transcribeFile(file: File) {
+    setLoading(true)
+    setError('')
+    const form = new FormData()
+    form.append('file', file)
+    const res = await fetch(`/api/app/meetings/${meetingId}/transcribe`, {
+      method: 'POST',
+      body: form,
+    })
+    setLoading(false)
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({})) as { error?: string }
+      setError(data.error ?? 'Transcription failed. Please try again.')
+      return
+    }
+    const data = await res.json() as { transcript: string; transcriptSource: string }
+    setTranscript(data.transcript)
+    setSource(data.transcriptSource)
+    setMode('idle')
+  }
+
+  async function transcribeYoutube(e: React.FormEvent) {
+    e.preventDefault()
+    if (!youtubeUrl.trim()) return
+    setLoading(true)
+    setError('')
+    const res = await fetch(`/api/app/meetings/${meetingId}/transcribe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ youtubeUrl: youtubeUrl.trim() }),
+    })
+    setLoading(false)
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({})) as { error?: string }
+      setError(data.error ?? 'Could not get YouTube transcript. Make sure the video has captions.')
+      return
+    }
+    const data = await res.json() as { transcript: string; transcriptSource: string }
+    setTranscript(data.transcript)
+    setSource(data.transcriptSource)
+    setYoutubeUrl('')
+    setMode('idle')
+  }
+
+  async function clearTranscript() {
+    await fetch(`/api/app/meetings/${meetingId}/transcribe`, { method: 'DELETE' })
+    setTranscript('')
+    setSource('')
+  }
+
+  return (
+    <div className="space-y-4">
+      {!transcript && !loading && (
+        <div className="rounded-xl border border-dashed border-border bg-muted/20 p-8 text-center">
+          <Mic className="mx-auto mb-3 size-8 text-muted-foreground/40" />
+          <p className="text-sm font-medium text-foreground">No transcript yet</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Upload an audio/video file or paste a YouTube link to generate a transcript.
+          </p>
+          <div className="mt-5 flex flex-wrap justify-center gap-3">
+            <Button variant="outline" size="sm" onClick={() => setMode('upload')}>
+              <Upload className="size-4" /> Upload file
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setMode('youtube')}>
+              <Link className="size-4" /> YouTube URL
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {mode === 'upload' && !loading && (
+        <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
+          <p className="text-sm font-medium text-foreground">Upload audio or video file</p>
+          <p className="text-xs text-muted-foreground">Supported: MP3, MP4, M4A, WAV, WEBM · Max ~25 MB</p>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="audio/*,video/mp4,video/webm"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file) transcribeFile(file)
+            }}
+          />
+          <div className="flex gap-2">
+            <Button size="sm" onClick={() => fileRef.current?.click()}>
+              <Upload className="size-4" /> Choose file
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setMode('idle')}>Cancel</Button>
+          </div>
+        </div>
+      )}
+
+      {mode === 'youtube' && !loading && (
+        <form onSubmit={transcribeYoutube} className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
+          <p className="text-sm font-medium text-foreground">YouTube URL</p>
+          <p className="text-xs text-muted-foreground">The video must have captions enabled (most public recordings do).</p>
+          <input
+            type="url"
+            value={youtubeUrl}
+            onChange={(e) => setYoutubeUrl(e.target.value)}
+            placeholder="https://youtube.com/watch?v=..."
+            className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50"
+            autoFocus
+          />
+          <div className="flex gap-2">
+            <Button type="submit" size="sm" disabled={!youtubeUrl.trim()}>
+              Get transcript
+            </Button>
+            <Button type="button" size="sm" variant="ghost" onClick={() => setMode('idle')}>Cancel</Button>
+          </div>
+        </form>
+      )}
+
+      {loading && (
+        <div className="flex items-center justify-center gap-3 py-12 text-muted-foreground">
+          <Loader2 className="size-5 animate-spin" />
+          <p className="text-sm">Transcribing… this may take a minute.</p>
+        </div>
+      )}
+
+      {error && (
+        <p className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+          {error}
+        </p>
+      )}
+
+      {transcript && !loading && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Transcript · {source === 'youtube' ? 'YouTube captions' : 'Audio upload'}
+            </p>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                onClick={() => onUseForMinutes(transcript)}
+              >
+                <FileText className="size-4" /> Use for minutes draft
+              </Button>
+              {transcript && (
+                <div className="flex gap-1">
+                  <Button size="sm" variant="outline" onClick={() => setMode(mode === 'youtube' ? 'idle' : 'youtube')}>
+                    <Link className="size-4" /> New
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={clearTranscript}>
+                    <X className="size-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="max-h-[500px] overflow-y-auto rounded-lg border border-border bg-muted/20 p-4">
+            <p className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-foreground">
+              {transcript}
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ---------- Main MeetingTabs component ----------
 
 export type MeetingTabsProps = {
@@ -1270,6 +1454,8 @@ export type MeetingTabsProps = {
   minutesStatus: string
   agendaPublishedAt?: string
   minutesDraft?: string
+  transcript?: string
+  transcriptSource?: string
   presidingOfficer: string
   townSlug?: string
   residentHubEnabled?: boolean
@@ -1285,12 +1471,22 @@ export function MeetingTabs({
   minutesStatus,
   agendaPublishedAt,
   minutesDraft,
+  transcript,
+  transcriptSource,
   presidingOfficer,
   townSlug,
   residentHubEnabled,
 }: MeetingTabsProps) {
+  const [activeMinutesDraft, setActiveMinutesDraft] = useState(minutesDraft ?? '')
+  const [activeTab, setActiveTab] = useState('agenda')
+
+  function handleUseForMinutes(text: string) {
+    setActiveMinutesDraft(text)
+    setActiveTab('minutes')
+  }
+
   return (
-    <Tabs defaultValue="agenda" className="mt-6">
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-6">
       <TabsList>
         <TabsTrigger value="agenda">Agenda</TabsTrigger>
         <TabsTrigger value="minutes">Minutes</TabsTrigger>
@@ -1298,6 +1494,7 @@ export function MeetingTabs({
           Attendance ({attendance.length})
         </TabsTrigger>
         <TabsTrigger value="actions">Action items</TabsTrigger>
+        <TabsTrigger value="transcription">Transcription</TabsTrigger>
         <TabsTrigger value="publish">Publish</TabsTrigger>
       </TabsList>
 
@@ -1311,7 +1508,7 @@ export function MeetingTabs({
           agenda={agenda}
           motions={motions}
           presidingOfficer={presidingOfficer}
-          minutesDraft={minutesDraft}
+          minutesDraft={activeMinutesDraft}
         />
       </TabsContent>
 
@@ -1323,13 +1520,22 @@ export function MeetingTabs({
         <ActionItemsTab meetingId={meetingId} actionItems={actionItems} />
       </TabsContent>
 
+      <TabsContent value="transcription" className="mt-4">
+        <TranscriptionTab
+          meetingId={meetingId}
+          initialTranscript={transcript}
+          initialSource={transcriptSource}
+          onUseForMinutes={handleUseForMinutes}
+        />
+      </TabsContent>
+
       <TabsContent value="publish" className="mt-4">
         <PublishTab
           meetingId={meetingId}
           status={status}
           minutesStatus={minutesStatus}
           agendaPublishedAt={agendaPublishedAt}
-          minutesDraft={minutesDraft}
+          minutesDraft={activeMinutesDraft}
           townSlug={townSlug}
           residentHubEnabled={residentHubEnabled}
         />

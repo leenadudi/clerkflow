@@ -206,6 +206,8 @@ export type Meeting = {
   meetingType: string
   agendaPublishedAt?: string
   minutesDraft?: string
+  transcript?: string
+  transcriptSource?: string
   presidingOfficer: string
   isPast: boolean
 }

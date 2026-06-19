@@ -76,6 +76,8 @@ export default async function MeetingDetailPage({
         minutesStatus={meeting.minutesStatus}
         agendaPublishedAt={meeting.agendaPublishedAt}
         minutesDraft={meeting.minutesDraft}
+        transcript={meeting.transcript}
+        transcriptSource={meeting.transcriptSource}
         presidingOfficer={meeting.presidingOfficer}
         townSlug={townSlug}
         residentHubEnabled={residentHubEnabled}

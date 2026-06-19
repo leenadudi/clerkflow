@@ -10,6 +10,30 @@ import { Textarea } from '@/components/ui/textarea'
 
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    setSubmitting(true)
+    const form = new FormData(e.currentTarget)
+    await fetch('/api/contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: form.get('name'),
+        role: form.get('role'),
+        town: form.get('town'),
+        state: form.get('state'),
+        email: form.get('email'),
+        population: form.get('population'),
+        preferredDate: form.get('preferredDate'),
+        preferredTime: form.get('preferredTime'),
+        message: form.get('message'),
+      }),
+    })
+    setSubmitting(false)
+    setSubmitted(true)
+  }
 
   return (
     <MarketingPageLayout className="max-w-5xl">
@@ -49,13 +73,7 @@ export default function ContactPage() {
                 </p>
               </div>
             ) : (
-              <form
-                className="flex flex-col gap-5"
-                onSubmit={(e) => {
-                  e.preventDefault()
-                  setSubmitted(true)
-                }}
-              >
+              <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
                 <div className="grid gap-5 sm:grid-cols-2">
                   <div className="flex flex-col gap-1.5">
                     <label htmlFor="name" className="text-sm font-medium text-foreground">
@@ -106,6 +124,43 @@ export default function ContactPage() {
                   <Input id="population" name="population" placeholder="1,200" />
                 </div>
 
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="preferred-date" className="text-sm font-medium text-foreground">
+                      Preferred date
+                    </label>
+                    <Input
+                      id="preferred-date"
+                      name="preferredDate"
+                      type="date"
+                      required
+                      min={new Date().toISOString().split('T')[0]}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="preferred-time" className="text-sm font-medium text-foreground">
+                      Preferred time
+                    </label>
+                    <select
+                      id="preferred-time"
+                      name="preferredTime"
+                      required
+                      className="h-9 rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50"
+                    >
+                      <option value="">Select a time</option>
+                      {[
+                        '9:00 AM', '9:30 AM', '10:00 AM', '10:30 AM',
+                        '11:00 AM', '11:30 AM', '12:00 PM', '12:30 PM',
+                        '1:00 PM', '1:30 PM', '2:00 PM', '2:30 PM',
+                        '3:00 PM', '3:30 PM', '4:00 PM', '4:30 PM',
+                        '5:00 PM',
+                      ].map((t) => (
+                        <option key={t} value={t}>{t} ET</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
                 <div className="flex flex-col gap-1.5">
                   <label htmlFor="message" className="text-sm font-medium text-foreground">
                     Anything else? (optional)
@@ -118,8 +173,8 @@ export default function ContactPage() {
                   />
                 </div>
 
-                <Button type="submit" size="lg" className="w-fit">
-                  Schedule a walkthrough
+                <Button type="submit" size="lg" className="w-fit" disabled={submitting}>
+                  {submitting ? 'Sending…' : 'Schedule a walkthrough'}
                 </Button>
 
                 <p className="text-xs text-muted-foreground">
@@ -141,7 +196,6 @@ export default function ContactPage() {
               <ul className="mt-4 flex flex-col gap-3 text-sm text-muted-foreground">
                 <li>30-minute video walkthrough</li>
                 <li>Live Q&A with someone who knows municipal clerks</li>
-                <li>Custom quote for your town&apos;s population</li>
                 <li>No obligation — explore the demo on your own first</li>
               </ul>
             </CardContent>
@@ -154,10 +208,10 @@ export default function ContactPage() {
                 <div>
                   <p className="font-medium text-foreground">Email</p>
                   <a
-                    href="mailto:hello@clerkflow.software"
+                    href="mailto:leena@clerkflow.software"
                     className="text-muted-foreground hover:text-foreground hover:underline"
                   >
-                    hello@clerkflow.software
+                    leena@clerkflow.software
                   </a>
                 </div>
               </div>
