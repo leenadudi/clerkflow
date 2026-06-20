@@ -5,35 +5,23 @@ import { usePathname } from 'next/navigation'
 import {
   LayoutGrid,
   Calendar,
-  Archive,
+  FileText,
   ClipboardList,
   Users,
-  Send,
-  Upload,
-  BarChart3,
-  ShieldCheck,
+  Wrench,
   Settings,
   Shield,
-  Inbox,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useWorkspace } from './workspace-context'
 
-const WORKSPACE = [
-  { label: 'Home', href: '/app', icon: LayoutGrid },
-  { label: 'Inbox', href: '/app/inbox', icon: Inbox },
+const NAV_ITEMS = [
+  { label: 'Dashboard', href: '/app', icon: LayoutGrid },
   { label: 'Meetings', href: '/app/meetings', icon: Calendar },
-  { label: 'Records Requests', href: '/app/records', icon: Archive, badgeKey: 'foia' as const },
-  { label: 'Permits & Licenses', href: '/app/services', icon: ClipboardList },
-  { label: 'Boards', href: '/app/boards', icon: Users },
-]
-
-const MANAGE = [
-  { label: 'Publish', href: '/app/publish', icon: Send },
-  { label: 'Import', href: '/app/import', icon: Upload },
-  { label: 'Reports', href: '/app/reports', icon: BarChart3 },
-  { label: 'Compliance', href: '/app/compliance', icon: ShieldCheck },
-  { label: 'Settings', href: '/app/settings', icon: Settings },
+  { label: 'Public Records', href: '/app/records', icon: FileText, badgeKey: 'foia' as const },
+  { label: 'Licences & Permits', href: '/app/services', icon: ClipboardList },
+  { label: 'Boards & Commissions', href: '/app/boards', icon: Users },
+  { label: 'Admin', href: '/app/tools', icon: Wrench },
 ]
 
 type BadgeVariant = 'danger' | 'warning'
@@ -85,7 +73,6 @@ export function SidebarNav() {
   const isActive = (href: string) =>
     href === '/app' ? pathname === '/app' : pathname.startsWith(href)
 
-  // Badge: show overdue count in red, or due-soon count in amber if no overdue
   const foiaBadge = foiaOverdueCount > 0 ? foiaOverdueCount : foiaDueSoonCount > 0 ? foiaDueSoonCount : 0
   const foiaBadgeVariant: BadgeVariant = foiaOverdueCount > 0 ? 'danger' : 'warning'
 
@@ -104,11 +91,8 @@ export function SidebarNav() {
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 pb-4">
-        <p className="px-3 pb-2 pt-3 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/50">
-          Workspace
-        </p>
-        <div className="flex flex-col gap-1">
-          {WORKSPACE.map((item) => (
+        <div className="flex flex-col gap-1 pt-2">
+          {NAV_ITEMS.map((item) => (
             <NavLink
               key={item.href}
               item={item}
@@ -118,16 +102,14 @@ export function SidebarNav() {
             />
           ))}
         </div>
-
-        <p className="px-3 pb-2 pt-5 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/50">
-          Manage
-        </p>
-        <div className="flex flex-col gap-1">
-          {MANAGE.map((item) => (
-            <NavLink key={item.href} item={item} active={isActive(item.href)} />
-          ))}
-        </div>
       </nav>
+
+      <div className="px-3 pb-3">
+        <NavLink
+          item={{ label: 'Settings', href: '/app/settings', icon: Settings }}
+          active={isActive('/app/settings')}
+        />
+      </div>
 
       <div className="flex items-center gap-3 border-t border-sidebar-border px-4 py-4">
         <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-sidebar-accent text-xs font-semibold text-sidebar-accent-foreground">

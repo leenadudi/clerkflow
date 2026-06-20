@@ -182,7 +182,7 @@ export default function ImportPage() {
         <PageHeader
           title="Import records"
           description="Upload a spreadsheet or document to import records into Clerkflow."
-          breadcrumbs={[{ label: 'Import' }]}
+          breadcrumbs={[{ label: 'Admin', href: '/app/tools' }, { label: 'Import' }]}
         />
 
         <div className="mt-6 space-y-4">

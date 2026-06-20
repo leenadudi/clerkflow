@@ -1063,6 +1063,22 @@ export async function submitPublicFoia(
       body: input.summary,
     })
 
+    await db.insert(foiaAuditLog).values({
+      foiaRequestId: created.id,
+      action: 'created',
+      actorName: input.requesterName || 'Public submission',
+      actorRole: 'Requester',
+      detail: 'Request received via public portal',
+    })
+
+    await db.insert(foiaWorkflowSteps).values([
+      { foiaRequestId: created.id, label: 'Request received', meta: 'Just now', state: 'done', sortOrder: 1 },
+      { foiaRequestId: created.id, label: 'Acknowledgment sent', meta: 'Pending', state: 'current', sortOrder: 2 },
+      { foiaRequestId: created.id, label: 'Records gathered', meta: 'Pending', state: 'pending', sortOrder: 3 },
+      { foiaRequestId: created.id, label: 'Review & redact', meta: 'Pending', state: 'pending', sortOrder: 4 },
+      { foiaRequestId: created.id, label: 'Release to requester', meta: 'Pending', state: 'pending', sortOrder: 5 },
+    ])
+
     return {
       publicId: created.publicId,
       message: 'Your request has been logged. Save your confirmation number to track status.',

@@ -86,16 +86,21 @@ const STATUS_STYLES: Record<
   },
 }
 
+function normalizeStatus(s: string): StatusKey {
+  const normalized = s.replace(/_/g, '-') as StatusKey
+  return normalized in STATUS_STYLES ? normalized : 'new'
+}
+
 export function StatusPill({
   status,
   label,
   className,
 }: {
-  status: StatusKey
+  status: StatusKey | string
   label?: string
   className?: string
 }) {
-  const config = STATUS_STYLES[status]
+  const config = STATUS_STYLES[normalizeStatus(status)]
   return (
     <span
       className={cn(

@@ -71,16 +71,20 @@ export default async function TownMeetingDetailPage({
         </section>
       )}
 
-      {meeting.minutesStatus === 'approved' && (
-        <section className="mt-8">
-          <h2 className="text-base font-semibold text-foreground">Minutes</h2>
-          <p className="mt-2 rounded-lg border border-border bg-card px-5 py-4 text-sm text-muted-foreground">
-            Approved minutes are available. Contact the clerk's office to request a copy.
-          </p>
+      {meeting.minutesDraft && (
+        <section className="mt-10">
+          <h2 className="flex items-center gap-2 text-base font-semibold text-foreground">
+            <FileText className="size-4" /> Minutes
+          </h2>
+          <div className="mt-4 rounded-xl border border-border bg-card px-5 py-4">
+            <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+              {meeting.minutesDraft}
+            </p>
+          </div>
         </section>
       )}
 
-      {meeting.minutesStatus === 'draft' && (
+      {!meeting.minutesDraft && meeting.minutesStatus !== 'not_started' && (
         <p className="mt-8 text-sm text-muted-foreground">
           Minutes are being prepared and will be published after approval.
         </p>

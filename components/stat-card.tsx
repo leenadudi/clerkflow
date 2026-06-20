@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import type { LucideIcon } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
@@ -8,12 +9,14 @@ export function StatCard({
   hint,
   icon: Icon,
   tone = 'default',
+  href,
 }: {
   label: string
   value: string | number
   hint?: string
   icon: LucideIcon
   tone?: 'default' | 'danger' | 'warning' | 'success'
+  href?: string
 }) {
   const toneStyles = {
     default: 'bg-primary/10 text-primary',
@@ -29,8 +32,8 @@ export function StatCard({
         ? 'text-warning-foreground'
         : 'text-foreground'
 
-  return (
-    <Card>
+  const card = (
+    <Card className={cn(href && 'transition-shadow hover:shadow-md')}>
       <CardContent className="flex items-start justify-between gap-3 p-5">
         <div className="min-w-0">
           <p className="text-sm font-medium text-muted-foreground">{label}</p>
@@ -52,4 +55,14 @@ export function StatCard({
       </CardContent>
     </Card>
   )
+
+  if (href) {
+    return (
+      <Link href={href} className="block">
+        {card}
+      </Link>
+    )
+  }
+
+  return card
 }

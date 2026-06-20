@@ -33,7 +33,7 @@ export default async function ServicesPage({
   return (
     <div className="mx-auto max-w-4xl">
       <PageHeader
-        title="Permits & Licenses"
+        title="Licences & Permits"
         description="Licenses, permits, and applications."
         breadcrumbs={[{ label: 'Permits & Licenses' }]}
         actions={<NewLicenseForm />}

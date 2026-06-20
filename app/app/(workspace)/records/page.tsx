@@ -93,7 +93,7 @@ export default async function RecordsRequestsPage({
   return (
     <div className="mx-auto max-w-5xl">
       <PageHeader
-        title="Records requests"
+        title="Public records"
         description="Open records requests across all departments. Respond before the statutory deadline."
         breadcrumbs={[{ label: 'Records Requests' }]}
         actions={<NewRequestForm />}

@@ -59,7 +59,10 @@ export async function withTownContext<T>(
   fn: (db: Database) => Promise<T>,
 ): Promise<T> {
   const isDemo = await isDemoRequest()
-  const database = isDemo && isDemoDatabaseConfigured() ? getDemoDb() : getDb()
+  if (isDemo && !isDemoDatabaseConfigured()) {
+    throw new Error('Demo mode is active but DATABASE_URL_DEMO is not configured.')
+  }
+  const database = isDemo ? getDemoDb() : getDb()
   return database.transaction(async (tx) => {
     await tx.execute(sql`SELECT set_config('app.current_town_id', ${townId}, true)`)
     return fn(tx as unknown as Database)

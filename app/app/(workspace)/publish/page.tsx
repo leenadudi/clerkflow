@@ -1,10 +1,11 @@
 import Link from 'next/link'
-import { ExternalLink, Calendar, FileText, Globe } from 'lucide-react'
+import { ExternalLink, Calendar, FileText, Globe, Code2 } from 'lucide-react'
 import { PageHeader } from '@/components/page-header'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { StatusPill } from '@/components/status-pill'
 import { listPublishedMeetings, listFoiaRequests, getTownView } from '@/lib/server/data'
+import { EmbedSnippets } from './_components/embed-snippets'
 
 export default async function PublishPage() {
   const [publishedMeetings, foiaRequests, town] = await Promise.all([
@@ -22,7 +23,7 @@ export default async function PublishPage() {
       <PageHeader
         title="Publish"
         description="What residents can see on your public hub."
-        breadcrumbs={[{ label: 'Publish' }]}
+        breadcrumbs={[{ label: 'Admin', href: '/app/tools' }, { label: 'Publish' }]}
         actions={
           <a
             href={residentHubUrl}
@@ -148,6 +149,17 @@ export default async function PublishPage() {
               </a>
             ))}
           </div>
+        </section>
+
+        <section>
+          <div className="mb-3 flex items-center gap-2">
+            <Code2 className="size-4 text-muted-foreground" />
+            <h2 className="text-sm font-semibold text-foreground">Embed on your website</h2>
+          </div>
+          <p className="mb-4 text-xs text-muted-foreground">
+            Already have a town website? Paste one of these snippets into any page to add town services without replacing your existing site.
+          </p>
+          <EmbedSnippets townSlug={town.slug} />
         </section>
       </div>
     </div>

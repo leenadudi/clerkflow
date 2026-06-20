@@ -62,7 +62,7 @@ export default async function InboxPage() {
             ? `Receiving email at ${connection.gmailAddress}`
             : 'Connect Gmail to receive resident emails here.'
         }
-        breadcrumbs={[{ label: 'Inbox' }]}
+        breadcrumbs={[{ label: 'Admin', href: '/app/tools' }, { label: 'Inbox' }]}
         actions={
           connection ? (
             <CheckNowButton />

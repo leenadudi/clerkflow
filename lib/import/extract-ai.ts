@@ -1,6 +1,6 @@
 import type { ParseResult, DocType, ImportRecord } from './types'
 
-const MODEL = 'gemini-2.0-flash'
+const MODEL = 'gemini-2.5-flash'
 
 const SYSTEM_PROMPT = `You are a data extraction assistant for a municipal clerk software system.
 Given raw text from a document, identify the document type and extract structured records.

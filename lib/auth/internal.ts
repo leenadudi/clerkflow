@@ -19,7 +19,12 @@ export function isInternalAuthConfigured(): boolean {
 
 export function verifyInternalPassword(password: string): boolean {
   const secret = getInternalSecret()
-  if (!secret) return true
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('INTERNAL_PASSWORD must be set in production.')
+    }
+    return true
+  }
   if (password.length !== secret.length) return false
   return timingSafeEqual(Buffer.from(password), Buffer.from(secret))
 }
