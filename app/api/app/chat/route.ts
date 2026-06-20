@@ -17,7 +17,7 @@ export const runtime = 'nodejs'
 export const maxDuration = 60
 
 const google = createGoogleGenerativeAI({
-  apiKey: process.env.GOOGLE_AI_API_KEY,
+  apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY ?? process.env.GOOGLE_AI_API_KEY,
 })
 
 export async function POST(request: Request) {
