@@ -36,7 +36,7 @@ export default function RootLayout({
       <body className="font-sans antialiased">
         <ClerkProvider>
           <AppProviders>{children}</AppProviders>
-          {process.env.NODE_ENV === 'production' && <Analytics />}
+          <Analytics />
         </ClerkProvider>
       </body>
     </html>
